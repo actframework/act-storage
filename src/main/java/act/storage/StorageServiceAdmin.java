@@ -22,8 +22,8 @@ public class StorageServiceAdmin {
         public FieldServiceInfo(String classField) {
             this.className = S.before(classField, ":");
             this.fieldName = S.after(classField, ":");
-            this.ss = ssm.storageService(classField, fieldName);
-            this.updatePolicy = ssm.updatePolicy(classField, fieldName);
+            this.ss = ssm.storageService(className, fieldName);
+            this.updatePolicy = ssm.updatePolicy(className, fieldName);
         }
 
         public String getClassName() {
