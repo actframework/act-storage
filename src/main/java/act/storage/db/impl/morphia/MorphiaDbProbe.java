@@ -4,7 +4,7 @@ import act.Act;
 import act.storage.db.DbProbe;
 
 /**
- * Check if Morphia is loaded
+ * Check if Morphia plugin is loaded
  */
 public class MorphiaDbProbe implements DbProbe {
     @Override

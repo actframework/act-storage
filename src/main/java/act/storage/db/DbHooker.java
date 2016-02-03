@@ -9,16 +9,16 @@ import act.asm.Type;
 public interface DbHooker {
 
     /**
-     * Returns the ASM type of entity annotation
+     * Returns the type of entity annotation
      * @return the entity annotation type
      */
-    Type entityAnnotation();
+    Class entityAnnotation();
 
     /**
-     * Returns the ASM Type of transient annotation
+     * Returns the type of transient annotation
      * @return the transient annotation type
      */
-    Type transientAnnotationType();
+    Class transientAnnotationType();
 
     /**
      * plugin logic to process {@link org.osgl.storage.ISObject sobject}

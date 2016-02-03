@@ -1,11 +1,22 @@
 package act.storage;
 
+import act.Act;
 import act.Destroyable;
 import act.app.App;
 import act.app.AppService;
 import act.app.AppServiceBase;
+import act.app.event.AppEventId;
 import act.conf.AppConfig;
+import act.db.DbPluginRegistered;
+import act.di.DiBinder;
+import act.event.ActEvent;
+import act.event.ActEventListenerBase;
 import act.plugin.AppServicePlugin;
+import act.storage.db.DbHooker;
+import act.storage.db.DbProbe;
+import act.storage.db.impl.morphia.MorphiaDbHooker;
+import act.storage.db.impl.morphia.MorphiaDbProbe;
+import act.storage.db.util.Setter;
 import org.osgl.$;
 import org.osgl.exception.ConfigurationException;
 import org.osgl.logging.LogManager;
@@ -15,12 +26,15 @@ import org.osgl.util.C;
 import org.osgl.util.E;
 import org.osgl.util.S;
 
+import javax.inject.Singleton;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
  * Manage {@link org.osgl.storage.IStorageService} instances
  */
+@Singleton
 public class StorageServiceManager extends AppServicePlugin implements AppService<StorageServiceManager>, Destroyable {
 
     private static Logger logger = LogManager.get(StorageServiceManager.class);
@@ -45,11 +59,29 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
      */
     private Map<String, UpdatePolicy> updatePolicyIndex = C.newMap();
 
+    /**
+     * Map a list of managed sobject fields to class name
+     */
+    private Map<String, List<String>> managedFieldIndex = C.newMap();
+
+    /**
+     * Map {@link Setter} instance to (Class, FieldName) pair
+     */
+    private Map<$.T2<Class, String>, Setter> setterIndex = C.newMap();
+
+    private List<DbHooker> dbHookers = C.newList();
+
     private App app;
 
     private boolean isDestroyed;
 
     public StorageServiceManager() {
+        Act.registerEventListener(DbPluginRegistered.class, new ActEventListenerBase<DbPluginRegistered>() {
+            @Override
+            public void on(DbPluginRegistered event) throws Exception {
+                addBuiltInDbHookers();
+            }
+        });
     }
 
     @Override
@@ -57,6 +89,17 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
         this.app = app;
         initServices(app.config());
         app.singletonRegistry().register(getClass(), this);
+        app.jobManager().on(AppEventId.DEPENDENCY_INJECTOR_LOADED, new Runnable() {
+            @Override
+            public void run() {
+                app().eventBus().emit(new DiBinder<StorageServiceManager>(this, StorageServiceManager.class) {
+                    @Override
+                    public StorageServiceManager resolve(App app) {
+                        return StorageServiceManager.this;
+                    }
+                });
+            }
+        });
     }
 
     private static String ssKey(String className, String fieldName) {
@@ -94,7 +137,7 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
         }
     }
 
-    Set<String> storageFields() {
+    public Set<String> storageFields() {
         return serviceIndex.keySet();
     }
 
@@ -137,7 +180,51 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
         }
         isDestroyed = true;
         Destroyable.Util.tryDestroyAll(serviceMap.values());
+        Destroyable.Util.tryDestroyAll(dbHookers);
         serviceMap.clear();
+        serviceIndex.clear();
+        updatePolicyIndex.clear();
+        managedFieldIndex.clear();
+        setterIndex.clear();
+        dbHookers.clear();
+    }
+
+    public List<String> managedFields(String className) {
+        List<String> fields = managedFieldIndex.get(className);
+        if (null == fields) {
+            fields = C.newList();
+            Set<String> ss = storageFields();
+            for (String s: ss) {
+                if (s.startsWith(className)) {
+                    String fn = S.after(s, ":");
+                    if (S.notEmpty(fn)) {
+                        fields.add(fn);
+                    }
+                }
+            }
+            managedFieldIndex.put(className, fields);
+        }
+        return fields;
+    }
+
+    public Setter setter(Class c, String fieldName) {
+        $.T2<Class, String> classFieldNamePair = $.T2(c, fieldName);
+        Setter setter = setterIndex.get(classFieldNamePair);
+        if (null == setter) {
+            setter = Setter.probe(c, fieldName);
+            setterIndex.put(classFieldNamePair, setter);
+        }
+        return setter;
+    }
+
+    public void addDbHooker(DbHooker dbHooker) {
+        if (!this.dbHookers.contains(dbHooker)) {
+            this.dbHookers.add(dbHooker);
+        }
+    }
+
+    public List<DbHooker> dbHookers() {
+        return C.list(dbHookers);
     }
 
     private void initServices(AppConfig config) {
@@ -225,5 +312,11 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
         IStorageService svc = plugin.initStorageService(ssId, app(), svcConf);
         serviceMap.put(svcId, svc);
         logger.info("storage service[%s] initialized", svcId);
+    }
+
+    private void addBuiltInDbHookers() {
+        if (new MorphiaDbProbe().exists()) {
+            addDbHooker(new MorphiaDbHooker());
+        }
     }
 }
