@@ -76,12 +76,6 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
     private boolean isDestroyed;
 
     public StorageServiceManager() {
-        Act.registerEventListener(DbPluginRegistered.class, new ActEventListenerBase<DbPluginRegistered>() {
-            @Override
-            public void on(DbPluginRegistered event) throws Exception {
-                addBuiltInDbHookers();
-            }
-        });
     }
 
     @Override
@@ -100,6 +94,7 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
                 });
             }
         });
+        app.eventBus().emit(new StorageServiceManagerInitialized(this));
     }
 
     private static String ssKey(String className, String fieldName) {
@@ -220,6 +215,7 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
     public void addDbHooker(DbHooker dbHooker) {
         if (!this.dbHookers.contains(dbHooker)) {
             this.dbHookers.add(dbHooker);
+            dbHooker.hookLifecycleInterceptors();
         }
     }
 
@@ -314,9 +310,12 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
         logger.info("storage service[%s] initialized", svcId);
     }
 
-    private void addBuiltInDbHookers() {
-        if (new MorphiaDbProbe().exists()) {
-            addDbHooker(new MorphiaDbHooker());
-        }
+    /**
+     * Returns {@code StorageServiceManager} instance if the manager has been initialized
+     * or {@code null} if not
+     * @return the instance or {@code null}
+     */
+    public static StorageServiceManager instance() {
+        return App.instance().singleton(StorageServiceManager.class);
     }
 }

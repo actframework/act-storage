@@ -3,12 +3,18 @@ package act.storage;
 import act.ActComponent;
 import act.app.App;
 import act.asm.AnnotationVisitor;
+import act.asm.ClassVisitor;
 import act.asm.FieldVisitor;
 import act.asm.Type;
+import act.asm.tree.AnnotationNode;
+import act.asm.tree.ClassNode;
+import act.asm.tree.FieldNode;
 import act.storage.db.DbHooker;
 import act.util.AppByteCodeEnhancer;
+import act.util.AsmTypes;
 import org.osgl.$;
 import org.osgl.util.C;
+import org.osgl.util.S;
 
 import java.util.List;
 import java.util.Map;
@@ -69,9 +75,9 @@ public class EntityClassEnhancer extends AppByteCodeEnhancer<EntityClassEnhancer
 
     @Override
     public FieldVisitor visitField(int access, final String name, String desc, String signature, Object value) {
-        FieldVisitor fv = super.visitField(access, name, desc, signature, value);
+        final FieldVisitor fv = super.visitField(access, name, desc, signature, value);
         if (managedFields.contains(name)) {
-            return new FieldVisitor(ASM5, fv) {
+            return new FieldVisitor(ASM5, new FieldNode(access, name, desc, signature, value)) {
                 @Override
                 public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
                     for (DbHooker hooker : dbHookers) {
@@ -82,6 +88,22 @@ public class EntityClassEnhancer extends AppByteCodeEnhancer<EntityClassEnhancer
                         }
                     }
                     return super.visitAnnotation(desc, visible);
+                }
+
+                @Override
+                public void visitEnd() {
+                    //super.visitEnd();
+                    FieldNode fn = (FieldNode)fv;
+                    for (DbHooker hooker : dbHookers) {
+                        if (shouldEnhance(hooker)) {
+                            if (!transientAnnotationState.get(hooker).contains(name)) {
+                                List<AnnotationNode> annoList = fn.visibleAnnotations;
+                                annoList.add(new AnnotationNode(ASM5, Type.getType(hooker.transientAnnotationType()).getDescriptor()));
+                            }
+                        }
+                    }
+                    //fn.accept(cv);
+                    super.visitEnd();
                 }
             };
         }
@@ -102,14 +124,15 @@ public class EntityClassEnhancer extends AppByteCodeEnhancer<EntityClassEnhancer
     }
 
     private void doEnhanceOn(String sobjField, DbHooker hooker) {
-        if (shouldAddTransientAnnotation(sobjField, hooker)) {
-            addTransientAnnotation(sobjField, hooker);
-        }
         addKeyField(sobjField, hooker);
     }
 
     private void addKeyField(String sobjField, DbHooker hooker) {
-        $.nil();
+        String fieldName = S.builder(sobjField).append("Key").toString();
+        FieldVisitor fv = cv.visitField(ACC_PRIVATE, fieldName, AsmTypes.STRING_DESC, null, null);
+        AnnotationVisitor av = fv.visitAnnotation(Type.getType(hooker.transientAnnotationType()).getDescriptor(), true);
+        av.visitEnd();
+        fv.visitEnd();
     }
 
     private void addTransientAnnotation(String sobjField, DbHooker hooker) {

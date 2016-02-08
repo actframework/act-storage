@@ -1,15 +1,15 @@
-package act.storage.db.impl.morphia;
+package act.storage.db.impl.ebean;
 
 import act.Act;
 import act.storage.db.DbProbe;
 
 /**
- * Check if Morphia plugin is loaded
+ * Check if Ebean plugin is loaded
  */
-public class MorphiaDbProbe extends DbProbe {
+public class EbeanDbProbe extends DbProbe {
     @Override
     public boolean exists() {
-        return null != Act.dbManager().plugin("act.db.morphia.MorphiaPlugin");
+        return null != Act.dbManager().plugin("act.db.ebean.EbeanPlugin");
     }
 
     @Override
