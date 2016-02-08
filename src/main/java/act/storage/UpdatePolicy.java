@@ -36,6 +36,9 @@ public enum UpdatePolicy {
     DELETE_OLD_DATA () {
         @Override
         public void handleUpdate(String prevKey, ISObject updatedObject, IStorageService storageService) {
+            if (S.blank(prevKey)) {
+                return;
+            }
             if (null != updatedObject && S.neq(prevKey, updatedObject.getKey())) {
                 storageService.remove(prevKey);
             }

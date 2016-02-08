@@ -3,6 +3,7 @@ package act.storage;
 import act.app.App;
 import org.osgl.storage.IStorageService;
 import org.osgl.storage.impl.FileSystemService;
+import org.osgl.util.C;
 
 import java.util.Map;
 
@@ -13,7 +14,7 @@ public class FileSystemStoragePlugin extends StoragePlugin {
 
     @Override
     protected IStorageService initStorageService(String id, App app, Map<String, String> conf) {
-        return new FileSystemService(conf);
+        return new FileSystemService(calibrate(conf, "storage.fs."));
     }
 
 }

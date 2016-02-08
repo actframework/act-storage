@@ -107,7 +107,7 @@ class StorageFieldConverter extends AbstractEntityInterceptor implements EntityI
         for (String fieldName : storageFields) {
             UpdatePolicy updatePolicy = ssm.updatePolicy(cn, fieldName);
             IStorageService ss = ssm.storageService(cn, fieldName);
-            String keyCacheField = S.builder("_").append(fieldName).toString();
+            String keyCacheField = S.builder(fieldName).append("Key").toString();
             ISObject sobj = $.getProperty(ent, fieldName);
             String prevKey = $.getProperty(ent, keyCacheField);
             updatePolicy.handleUpdate(prevKey, sobj, ss);
@@ -118,10 +118,17 @@ class StorageFieldConverter extends AbstractEntityInterceptor implements EntityI
                 } else if (S.eq(newKey, prevKey)) {
                     continue;
                 }
-                ss.put(newKey, sobj);
+                sobj = ss.put(newKey, sobj);
+                Setter setter = ssm.setter(c, keyCacheField);
+                setter.set(ent, newKey);
+                setter = ssm.setter(c, fieldName);
+                setter.set(ent, sobj);
+                dbObj.put(fieldName, sobj.getKey());
             }
         }
     }
+
+
 
 
 

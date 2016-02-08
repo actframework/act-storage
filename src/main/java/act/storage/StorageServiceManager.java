@@ -304,7 +304,7 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
         if (null == plugin) {
             throw new ConfigurationException("Cannot init storage service[%s]: implementation not found", svcId);
         }
-        svcConf.put(IStorageService.CONF_ID, ssId);
+        svcConf.put(IStorageService.CONF_ID, "".equals(ssId) ? DEFAULT : ssId);
         IStorageService svc = plugin.initStorageService(ssId, app(), svcConf);
         serviceMap.put(svcId, svc);
         logger.info("storage service[%s] initialized", svcId);

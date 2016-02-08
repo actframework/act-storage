@@ -3,11 +3,8 @@ package act.storage;
 import act.ActComponent;
 import act.app.App;
 import act.asm.AnnotationVisitor;
-import act.asm.ClassVisitor;
 import act.asm.FieldVisitor;
 import act.asm.Type;
-import act.asm.tree.AnnotationNode;
-import act.asm.tree.ClassNode;
 import act.asm.tree.FieldNode;
 import act.storage.db.DbHooker;
 import act.util.AppByteCodeEnhancer;
@@ -77,7 +74,7 @@ public class EntityClassEnhancer extends AppByteCodeEnhancer<EntityClassEnhancer
     public FieldVisitor visitField(int access, final String name, String desc, String signature, Object value) {
         final FieldVisitor fv = super.visitField(access, name, desc, signature, value);
         if (managedFields.contains(name)) {
-            return new FieldVisitor(ASM5, new FieldNode(access, name, desc, signature, value)) {
+            return new FieldVisitor(ASM5, fv) {
                 @Override
                 public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
                     for (DbHooker hooker : dbHookers) {
@@ -92,17 +89,14 @@ public class EntityClassEnhancer extends AppByteCodeEnhancer<EntityClassEnhancer
 
                 @Override
                 public void visitEnd() {
-                    //super.visitEnd();
-                    FieldNode fn = (FieldNode)fv;
                     for (DbHooker hooker : dbHookers) {
                         if (shouldEnhance(hooker)) {
                             if (!transientAnnotationState.get(hooker).contains(name)) {
-                                List<AnnotationNode> annoList = fn.visibleAnnotations;
-                                annoList.add(new AnnotationNode(ASM5, Type.getType(hooker.transientAnnotationType()).getDescriptor()));
+                                AnnotationVisitor av = fv.visitAnnotation(Type.getType(hooker.transientAnnotationType()).getDescriptor(), true);
+                                av.visitEnd();
                             }
                         }
                     }
-                    //fn.accept(cv);
                     super.visitEnd();
                 }
             };
