@@ -1,26 +1,19 @@
 package act.storage;
 
-import act.Act;
 import act.Destroyable;
 import act.app.App;
 import act.app.AppService;
-import act.app.AppServiceBase;
 import act.app.event.AppEventId;
 import act.conf.AppConfig;
-import act.db.DbPluginRegistered;
 import act.di.DiBinder;
-import act.event.ActEvent;
-import act.event.ActEventListenerBase;
 import act.plugin.AppServicePlugin;
 import act.storage.db.DbHooker;
-import act.storage.db.DbProbe;
-import act.storage.db.impl.morphia.MorphiaDbHooker;
-import act.storage.db.impl.morphia.MorphiaDbProbe;
 import act.storage.db.util.Setter;
 import org.osgl.$;
 import org.osgl.exception.ConfigurationException;
 import org.osgl.logging.LogManager;
 import org.osgl.logging.Logger;
+import org.osgl.storage.ISObject;
 import org.osgl.storage.IStorageService;
 import org.osgl.util.C;
 import org.osgl.util.E;
@@ -47,27 +40,27 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
     /**
      * map service id to storage service instance
      */
-    private Map<String, IStorageService> serviceMap = C.newMap();
+    private Map<String, IStorageService> serviceById = C.newMap();
 
     /**
      * map class name plus field name to storage service instance
      */
-    private Map<String, IStorageService> serviceIndex = C.newMap();
+    private Map<String, IStorageService> serviceByClassField = C.newMap();
 
     /**
      * map class name plus field name to {@link UpdatePolicy}
      */
-    private Map<String, UpdatePolicy> updatePolicyIndex = C.newMap();
+    private Map<String, UpdatePolicy> updatePolicyByClassField = C.newMap();
 
     /**
      * Map a list of managed sobject fields to class name
      */
-    private Map<String, List<String>> managedFieldIndex = C.newMap();
+    private Map<String, List<String>> managedFieldByClass = C.newMap();
 
     /**
      * Map {@link Setter} instance to (Class, FieldName) pair
      */
-    private Map<$.T2<Class, String>, Setter> setterIndex = C.newMap();
+    private Map<$.T2<Class, String>, Setter> setterByClass = C.newMap();
 
     private List<DbHooker> dbHookers = C.newList();
 
@@ -111,7 +104,7 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
         if (S.blank(serviceId)) {
             serviceId = DEFAULT;
         }
-        IStorageService ss = serviceMap.get(serviceId);
+        IStorageService ss = serviceById.get(serviceId);
         if (null == ss) {
             if (DEFAULT.equals(serviceId)) {
                 logger.warn("default storage service not configured. Use the upload storage service");
@@ -125,22 +118,22 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
             ss = ss.subFolder(contextPath);
         }
         String key = ssKey(className, fieldName);
-        serviceIndex.put(key, ss);
+        serviceByClassField.put(key, ss);
 
         if (null != updatePolicy) {
-            updatePolicyIndex.put(key, updatePolicy);
+            updatePolicyByClassField.put(key, updatePolicy);
         }
     }
 
     public Set<String> storageFields() {
-        return serviceIndex.keySet();
+        return serviceByClassField.keySet();
     }
 
     public IStorageService storageService(String className, String fieldName) {
         String key = ssKey(className, fieldName);
-        IStorageService svc = serviceIndex.get(key);
+        IStorageService svc = serviceByClassField.get(key);
         if (null == svc) {
-            svc = serviceIndex.get(className);
+            svc = serviceByClassField.get(className);
         }
         if (null == svc) {
             svc = app().uploadFileStorageService();
@@ -148,8 +141,12 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
         return svc;
     }
 
+    public IStorageService storageService(String serviceId) {
+        return serviceById.get(serviceId);
+    }
+
     public UpdatePolicy updatePolicy(String className, String fieldName) {
-        return updatePolicyIndex.get(ssKey(className, fieldName));
+        return updatePolicyByClassField.get(ssKey(className, fieldName));
     }
 
     @Override
@@ -174,18 +171,18 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
             return;
         }
         isDestroyed = true;
-        Destroyable.Util.tryDestroyAll(serviceMap.values());
+        Destroyable.Util.tryDestroyAll(serviceById.values());
         Destroyable.Util.tryDestroyAll(dbHookers);
-        serviceMap.clear();
-        serviceIndex.clear();
-        updatePolicyIndex.clear();
-        managedFieldIndex.clear();
-        setterIndex.clear();
+        serviceById.clear();
+        serviceByClassField.clear();
+        updatePolicyByClassField.clear();
+        managedFieldByClass.clear();
+        setterByClass.clear();
         dbHookers.clear();
     }
 
     public List<String> managedFields(String className) {
-        List<String> fields = managedFieldIndex.get(className);
+        List<String> fields = managedFieldByClass.get(className);
         if (null == fields) {
             fields = C.newList();
             Set<String> ss = storageFields();
@@ -197,17 +194,17 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
                     }
                 }
             }
-            managedFieldIndex.put(className, fields);
+            managedFieldByClass.put(className, fields);
         }
         return fields;
     }
 
     public Setter setter(Class c, String fieldName) {
         $.T2<Class, String> classFieldNamePair = $.T2(c, fieldName);
-        Setter setter = setterIndex.get(classFieldNamePair);
+        Setter setter = setterByClass.get(classFieldNamePair);
         if (null == setter) {
             setter = Setter.probe(c, fieldName);
-            setterIndex.put(classFieldNamePair, setter);
+            setterByClass.put(classFieldNamePair, setter);
         }
         return setter;
     }
@@ -221,6 +218,16 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
 
     public List<DbHooker> dbHookers() {
         return C.list(dbHookers);
+    }
+
+    public void delete(ISObject sobj) {
+        String id = sobj.getAttribute(ISObject.ATTR_SS_ID);
+        IStorageService ss = storageService(id);
+        String contextPath = sobj.getAttribute(ISObject.ATTR_SS_CTX);
+        if (S.notBlank(contextPath)) {
+            ss = ss.subFolder(contextPath);
+        }
+        ss.remove(sobj.getKey());
     }
 
     private void initServices(AppConfig config) {
@@ -238,7 +245,7 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
             } else {
                 logger.warn("Storage configuration not found. Will try to init default service with the sole storage plugin: %s", storagePlugin);
                 IStorageService svc = storagePlugin.initStorageService(DEFAULT, app(), C.<String, String>newMap());
-                serviceMap.put(DEFAULT, svc);
+                serviceById.put(DEFAULT, svc);
                 return;
             }
         }
@@ -249,7 +256,7 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
                 initService(dbId, storageConfig);
             }
         }
-        if (serviceMap.containsKey(DEFAULT)) return;
+        if (serviceById.containsKey(DEFAULT)) return;
         // try init default service if conf found
         String ssId = null;
         if (storageConfig.containsKey("ss." + DEFAULT +".impl")) {
@@ -259,12 +266,12 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
         }
         if (null != ssId) {
             initService(ssId, storageConfig);
-        } else if (serviceMap.size() == 1) {
-            IStorageService svc = serviceMap.values().iterator().next();
-            serviceMap.put(DEFAULT, svc);
+        } else if (serviceById.size() == 1) {
+            IStorageService svc = serviceById.values().iterator().next();
+            serviceById.put(DEFAULT, svc);
             logger.warn("Storage service configuration not found. Use the sole one storage service[%s] as default service", svc.id());
         } else {
-            if (serviceMap.isEmpty()) {
+            if (serviceById.isEmpty()) {
                 if (null == storagePlugin) {
                     logger.warn("Storage service not intialized: need to specify default storage service implementation");
                 } else {
@@ -278,7 +285,7 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
                         }
                     }
                     IStorageService svc = storagePlugin.initStorageService(DEFAULT, app(), svcConf);
-                    serviceMap.put(DEFAULT, svc);
+                    serviceById.put(DEFAULT, svc);
                 }
             } else {
                 throw E.invalidConfiguration("Default db service for the application needs to be specified");
@@ -306,7 +313,7 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
         }
         svcConf.put(IStorageService.CONF_ID, "".equals(ssId) ? DEFAULT : ssId);
         IStorageService svc = plugin.initStorageService(ssId, app(), svcConf);
-        serviceMap.put(svcId, svc);
+        serviceById.put(svcId, svc);
         logger.info("storage service[%s] initialized", svcId);
     }
 

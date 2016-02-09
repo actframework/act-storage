@@ -112,9 +112,10 @@ public class SObjectFieldScanner extends AppCodeScannerPluginBase {
                     private UpdatePolicy updatePolicy = UpdatePolicy.DELETE_OLD_DATA;
 
                     @Override
-                    public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+                    public AnnotationVisitor visitAnnotation(final String desc, boolean visible) {
                         AnnotationVisitor av = super.visitAnnotation(desc, visible);
                         if (isStoreAnno(desc)) {
+                            managed = true;
                             return new AnnotationVisitor(ASM5, av) {
                                 @Override
                                 public void visit(String name, Object value) {
@@ -129,14 +130,11 @@ public class SObjectFieldScanner extends AppCodeScannerPluginBase {
                                         }
                                     }
                                 }
-                            };
-                        } else if (isManagedAnno(desc)) {
-                            managed = true;
-                            return new AnnotationVisitor(ASM5, av) {
+
                                 @Override
                                 public void visitEnum(String name, String desc, String value) {
                                     super.visitEnum(name, desc, value);
-                                    if ("value".equals(name)) {
+                                    if ("updatePolicy".equals(name)) {
                                         updatePolicy = UpdatePolicy.valueOf(value);
                                     }
                                 }
@@ -159,9 +157,6 @@ public class SObjectFieldScanner extends AppCodeScannerPluginBase {
 
         private boolean isStoreAnno(String desc) {
             return Type.getType(Store.class).equals(Type.getType(desc));
-        }
-        private boolean isManagedAnno(String desc) {
-            return Type.getType(Managed.class).equals(Type.getType(desc));
         }
 
         private StorageServiceManager storageServiceManager() {

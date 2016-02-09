@@ -31,5 +31,14 @@ public @interface Store {
      * </ul>
      * @return the storage service locator
      */
-    String value();
+    String value() default "default:";
+
+    /**
+     * Specifies how to deal with updated SObject field that is marked
+     * with this {@code Managed} annotation
+     *
+     * @return the Update policy
+     * @see UpdatePolicy
+     */
+    UpdatePolicy updatePolicy() default UpdatePolicy.DELETE_OLD_DATA;
 }
