@@ -138,7 +138,7 @@ public class EntityClassEnhancer extends AppByteCodeEnhancer<EntityClassEnhancer
     }
 
     private boolean shouldEnhance(DbHooker hooker) {
-        return hasManagedFields && entityAnnotationState.get(hooker);
+        return hasManagedFields && entityAnnotationState.containsKey(hooker) && entityAnnotationState.get(hooker);
     }
 
     private synchronized StorageServiceManager ssm() {
