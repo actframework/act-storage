@@ -27,7 +27,7 @@ public class EntityClassEnhancer extends AppByteCodeEnhancer<EntityClassEnhancer
     private String cn;
     private StorageServiceManager ssm;
     private List<DbHooker> dbHookers = C.list();
-    private Map<DbHooker, Boolean> entityAnnotationState = C.newMap();
+    //private Map<DbHooker, Boolean> entityAnnotationState = C.newMap();
     private Map<DbHooker, Set<String>> transientAnnotationState = C.newMap();
     private List<String> managedFields = C.newList();
 
@@ -59,17 +59,17 @@ public class EntityClassEnhancer extends AppByteCodeEnhancer<EntityClassEnhancer
         }
     }
 
-    @Override
-    public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-        Type type = Type.getType(desc);
-        for (DbHooker hooker : dbHookers) {
-            if (Type.getType(hooker.entityAnnotation()).equals(type)) {
-                entityAnnotationState.put(hooker, true);
-            }
-        }
-        return super.visitAnnotation(desc, visible);
-    }
-
+//    @Override
+//    public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+//        Type type = Type.getType(desc);
+//        for (DbHooker hooker : dbHookers) {
+//            if (Type.getType(hooker.entityAnnotation()).equals(type)) {
+//                entityAnnotationState.put(hooker, true);
+//            }
+//        }
+//        return super.visitAnnotation(desc, visible);
+//    }
+//
     @Override
     public FieldVisitor visitField(int access, final String name, String desc, String signature, Object value) {
         final FieldVisitor fv = super.visitField(access, name, desc, signature, value);
@@ -138,7 +138,7 @@ public class EntityClassEnhancer extends AppByteCodeEnhancer<EntityClassEnhancer
     }
 
     private boolean shouldEnhance(DbHooker hooker) {
-        return hasManagedFields && entityAnnotationState.containsKey(hooker) && entityAnnotationState.get(hooker);
+        return hasManagedFields /* && entityAnnotationState.containsKey(hooker) && entityAnnotationState.get(hooker)*/;
     }
 
     private synchronized StorageServiceManager ssm() {
