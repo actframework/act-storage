@@ -325,4 +325,28 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
     public static StorageServiceManager instance() {
         return App.instance().singleton(StorageServiceManager.class);
     }
+
+    public static String keyCacheField(String fieldName) {
+        return S.builder(fieldName).append("Key").toString();
+    }
+
+    public void copyManagedFields(Object from, Object to) {
+        Class<?> cls = from.getClass();
+        String className = cls.getName();
+        List<String> managedFields = managedFields(className);
+        if (null == managedFields) {
+            return;
+        }
+        for (String fieldName : managedFields) {
+            String keyCacheField = keyCacheField(fieldName);
+            Setter setter = setter(cls, keyCacheField);
+            if (null != setter) {
+                setter.set(to, $.getProperty(from, keyCacheField));
+            }
+            setter = setter(cls, fieldName);
+            if (null != setter) {
+                setter.set(to, $.getProperty(from, fieldName));
+            }
+        }
+    }
 }
