@@ -58,7 +58,11 @@ public class SObjectFieldScanner extends AppCodeScannerPluginBase {
 
     private static class _ByteCodeVisitor extends ByteCodeVisitor {
         private App app;
+        private boolean managed;
         private String className;
+        private String serviceId;
+        private String contextPath;
+        private UpdatePolicy updatePolicy = UpdatePolicy.DELETE_OLD_DATA;
         _ByteCodeVisitor(App app) {
             this.app = $.notNull(app);
         }
@@ -73,6 +77,7 @@ public class SObjectFieldScanner extends AppCodeScannerPluginBase {
         public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
             AnnotationVisitor av = super.visitAnnotation(desc, visible);
             if (isStoreAnno(desc)) {
+                managed = true;
                 return new AnnotationVisitor(ASM5, av) {
                     @Override
                     public void visit(String name, Object value) {
@@ -86,12 +91,29 @@ public class SObjectFieldScanner extends AppCodeScannerPluginBase {
                                 serviceId = null;
                                 contextPath = url;
                             }
-                            storageServiceManager().registerServiceIndex(className, null, serviceId, contextPath, null);
+                            _ByteCodeVisitor.this.serviceId = serviceId;
+                            _ByteCodeVisitor.this.contextPath = contextPath;
+                        }
+                    }
+
+                    @Override
+                    public void visitEnum(String name, String desc, String value) {
+                        super.visitEnum(name, desc, value);
+                        if ("updatePolicy".equals(name)) {
+                            updatePolicy = UpdatePolicy.valueOf(value);
                         }
                     }
                 };
             }
             return av;
+        }
+
+        @Override
+        public void visitEnd() {
+            super.visitEnd();
+            if (managed) {
+                storageServiceManager().registerServiceIndex(className, null, serviceId, contextPath, updatePolicy);
+            }
         }
 
         @Override
@@ -147,6 +169,12 @@ public class SObjectFieldScanner extends AppCodeScannerPluginBase {
                     public void visitEnd() {
                         super.visitEnd();
                         if (managed) {
+                            if (S.blank(serviceId)) {
+                                serviceId = _ByteCodeVisitor.this.serviceId;
+                            }
+                            if (S.blank(contextPath)) {
+                                contextPath = _ByteCodeVisitor.this.contextPath;
+                            }
                             storageServiceManager().registerServiceIndex(className, fieldName, serviceId, contextPath, updatePolicy);
                         }
                     }
