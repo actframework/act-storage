@@ -44,9 +44,6 @@ public class EntityClassEnhancer extends AppByteCodeEnhancer<EntityClassEnhancer
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         super.visit(version, access, name, signature, superName, interfaces);
         String className = name.replace('/', '.').replace('$', '.');
-        if (className.contains("Image")) {
-            $.nil();
-        }
         List<String> l = ssm().managedFields(className);
         hasManagedFields = !l.isEmpty();
         if (hasManagedFields) {

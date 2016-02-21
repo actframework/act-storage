@@ -75,7 +75,7 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
     protected void applyTo(App app) {
         this.app = app;
         initServices(app.config());
-        app.singletonRegistry().register(getClass(), this);
+        app.registerSingleton(this);
         app.jobManager().on(AppEventId.DEPENDENCY_INJECTOR_LOADED, new Runnable() {
             @Override
             public void run() {
