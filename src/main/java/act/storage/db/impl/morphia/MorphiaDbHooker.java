@@ -117,14 +117,13 @@ class StorageFieldConverter extends AbstractEntityInterceptor implements EntityI
                 String newKey = sobj.getKey();
                 if (S.blank(newKey)) {
                     newKey = ss.getKey();
-                } else if (S.eq(newKey, prevKey)) {
-                    continue;
+                } else if (S.neq(newKey, prevKey)) {
+                    sobj = ss.put(newKey, sobj);
+                    Setter setter = ssm.setter(c, keyCacheField);
+                    setter.set(ent, newKey);
+                    setter = ssm.setter(c, fieldName);
+                    setter.set(ent, sobj);
                 }
-                sobj = ss.put(newKey, sobj);
-                Setter setter = ssm.setter(c, keyCacheField);
-                setter.set(ent, newKey);
-                setter = ssm.setter(c, fieldName);
-                setter.set(ent, sobj);
                 dbObj.put(fieldName, sobj.getKey());
             }
         }
