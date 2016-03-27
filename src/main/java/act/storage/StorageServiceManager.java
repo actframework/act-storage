@@ -5,7 +5,7 @@ import act.app.App;
 import act.app.AppService;
 import act.app.event.AppEventId;
 import act.conf.AppConfig;
-import act.di.DiBinder;
+import act.di.DependencyInjectionBinder;
 import act.plugin.AppServicePlugin;
 import act.storage.db.DbHooker;
 import act.storage.db.util.Setter;
@@ -79,7 +79,7 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
         app.jobManager().on(AppEventId.DEPENDENCY_INJECTOR_LOADED, new Runnable() {
             @Override
             public void run() {
-                app().eventBus().emit(new DiBinder<StorageServiceManager>(this, StorageServiceManager.class) {
+                app().eventBus().emit(new DependencyInjectionBinder<StorageServiceManager>(this, StorageServiceManager.class) {
                     @Override
                     public StorageServiceManager resolve(App app) {
                         return StorageServiceManager.this;
