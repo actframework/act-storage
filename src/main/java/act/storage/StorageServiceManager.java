@@ -187,7 +187,7 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
             fields = C.newList();
             Set<String> ss = storageFields();
             for (String s: ss) {
-                if (s.equals(className) || s.startsWith(className + ".") || s.startsWith(className + "$")) {
+                if (s.startsWith(className + ":")) {
                     String fn = S.after(s, ":");
                     if (S.notEmpty(fn)) {
                         fields.add(fn);
