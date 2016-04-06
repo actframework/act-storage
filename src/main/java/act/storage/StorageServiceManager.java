@@ -47,15 +47,24 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
      */
     private Map<String, IStorageService> serviceByClassField = C.newMap();
 
+    private Map<$.T2<Class, String>, $.Val<IStorageService>> serviceByClass = C.newMap();
+
     /**
      * map class name plus field name to {@link UpdatePolicy}
      */
     private Map<String, UpdatePolicy> updatePolicyByClassField = C.newMap();
 
+    private Map<$.T2<Class, String>, $.Val<UpdatePolicy>> updatePolicyByClass = C.newMap();
+
     /**
      * Map a list of managed sobject fields to class name
      */
     private Map<String, List<String>> managedFieldByClass = C.newMap();
+
+    /**
+     * Map a list of managed sobject fields to class name including super class names
+     */
+    private Map<String, List<String>> managedFieldByClass2 = C.newMap();
 
     /**
      * Map {@link Setter} instance to (Class, FieldName) pair
@@ -141,12 +150,53 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
         return svc;
     }
 
+    public IStorageService storageService(Class c, String fieldName) {
+        $.T2<Class, String> key = $.T2(c, fieldName);
+        $.Val<IStorageService> val = serviceByClass.get(key);
+        if (null == val) {
+            while (Object.class != c) {
+                IStorageService ss = serviceByClassField.get(ssKey(c.getName(), fieldName));
+                if (null == ss) {
+                    ss = serviceByClassField.get(c.getName());
+                }
+                if (null == ss) {
+                    c = c.getSuperclass();
+                    continue;
+                }
+                val = $.val(ss);
+                serviceByClass.put(key, val);
+                return ss;
+            }
+            val = $.val((IStorageService) null);
+            serviceByClass.put(key, val);
+        }
+        return val.get();
+    }
+
     public IStorageService storageService(String serviceId) {
         return serviceById.get(serviceId);
     }
 
     public UpdatePolicy updatePolicy(String className, String fieldName) {
         return updatePolicyByClassField.get(ssKey(className, fieldName));
+    }
+
+    public UpdatePolicy updatePolicy(Class c, String fieldName) {
+        $.T2<Class, String> key = $.T2(c, fieldName);
+        $.Val<UpdatePolicy> v = updatePolicyByClass.get(key);
+        if (null == v) {
+            while (Object.class != c) {
+                UpdatePolicy p = updatePolicy(c.getName(), fieldName);
+                if (null != p) {
+                    updatePolicyByClass.put(key, $.val(p));
+                    return p;
+                }
+                c = c.getSuperclass();
+            }
+            v = $.val((UpdatePolicy) null);
+            updatePolicyByClass.put(key, v);
+        }
+        return v.get();
     }
 
     @Override
@@ -199,14 +249,18 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
         return fields;
     }
 
-    public Setter setter(Class c, String fieldName) {
-        $.T2<Class, String> classFieldNamePair = $.T2(c, fieldName);
-        Setter setter = setterByClass.get(classFieldNamePair);
-        if (null == setter) {
-            setter = Setter.probe(c, fieldName);
-            setterByClass.put(classFieldNamePair, setter);
+    public List<String> managedFields(Class<?> c) {
+        String cn = c.getName();
+        List<String> fields = managedFieldByClass2.get(cn);
+        if (null == fields) {
+            fields = C.newList();
+            while (c != Object.class) {
+                fields.addAll(managedFields(c.getName()));
+                c = c.getSuperclass();
+            }
+            managedFieldByClass2.put(cn, fields);
         }
-        return setter;
+        return fields;
     }
 
     public void addDbHooker(DbHooker dbHooker) {
@@ -339,14 +393,8 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
         }
         for (String fieldName : managedFields) {
             String keyCacheField = keyCacheField(fieldName);
-            Setter setter = setter(cls, keyCacheField);
-            if (null != setter) {
-                setter.set(to, $.getProperty(from, keyCacheField));
-            }
-            setter = setter(cls, fieldName);
-            if (null != setter) {
-                setter.set(to, $.getProperty(from, fieldName));
-            }
+            $.setProperty(to, $.getProperty(from, keyCacheField), keyCacheField);
+            $.setProperty(to, $.getProperty(from, fieldName), fieldName);
         }
     }
 }

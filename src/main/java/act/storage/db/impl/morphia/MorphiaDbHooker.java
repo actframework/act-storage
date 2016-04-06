@@ -5,7 +5,6 @@ import act.db.morphia.MorphiaService;
 import act.storage.StorageServiceManager;
 import act.storage.UpdatePolicy;
 import act.storage.db.DbHooker;
-import act.storage.db.util.Setter;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.mongodb.morphia.AbstractEntityInterceptor;
@@ -18,7 +17,6 @@ import org.osgl.storage.ISObject;
 import org.osgl.storage.IStorageService;
 import org.osgl.util.S;
 
-import javax.inject.Inject;
 import java.util.List;
 
 /**
@@ -84,19 +82,17 @@ class StorageFieldConverter extends AbstractEntityInterceptor implements EntityI
     public void postLoad(Object ent, DBObject dbObj, Mapper mapper) {
         Class c = ent.getClass();
         String cn = c.getName();
-        List<String> storageFields = ssm.managedFields(cn);
+        List<String> storageFields = ssm.managedFields(c);
         for (String fieldName : storageFields) {
             String key = ((BasicDBObject) dbObj).getString(fieldName);
             if (S.blank(key)) {
                 continue;
             }
-            IStorageService ss = ssm.storageService(cn, fieldName);
+            IStorageService ss = ssm.storageService(c, fieldName);
             ISObject sobj = ss.get(key);
             if (null != sobj) {
-                Setter setter = ssm.setter(c, fieldName);
-                setter.set(ent, sobj);
-                setter = ssm.setter(c, StorageServiceManager.keyCacheField(fieldName));
-                setter.set(ent, key);
+                $.setProperty(ent, sobj, fieldName);
+                $.setProperty(ent, key, StorageServiceManager.keyCacheField(fieldName));
             }
         }
     }
@@ -105,10 +101,10 @@ class StorageFieldConverter extends AbstractEntityInterceptor implements EntityI
     public void prePersist(Object ent, DBObject dbObj, Mapper mapper) {
         Class c = ent.getClass();
         String cn = c.getName();
-        List<String> storageFields = ssm.managedFields(cn);
+        List<String> storageFields = ssm.managedFields(c);
         for (String fieldName : storageFields) {
-            UpdatePolicy updatePolicy = ssm.updatePolicy(cn, fieldName);
-            IStorageService ss = ssm.storageService(cn, fieldName);
+            UpdatePolicy updatePolicy = ssm.updatePolicy(c, fieldName);
+            IStorageService ss = ssm.storageService(c, fieldName);
             String keyCacheField = StorageServiceManager.keyCacheField(fieldName);
             ISObject sobj = $.getProperty(ent, fieldName);
             String prevKey = $.getProperty(ent, keyCacheField);
@@ -119,10 +115,8 @@ class StorageFieldConverter extends AbstractEntityInterceptor implements EntityI
                     newKey = ss.getKey();
                 } else if (S.neq(newKey, prevKey)) {
                     sobj = ss.put(newKey, sobj);
-                    Setter setter = ssm.setter(c, keyCacheField);
-                    setter.set(ent, newKey);
-                    setter = ssm.setter(c, fieldName);
-                    setter.set(ent, sobj);
+                    $.setProperty(ent, newKey, keyCacheField);
+                    $.setProperty(ent, sobj, fieldName);
                 }
                 dbObj.put(fieldName, sobj.getKey());
             }
