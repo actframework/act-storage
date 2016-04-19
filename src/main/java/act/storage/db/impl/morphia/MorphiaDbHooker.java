@@ -13,6 +13,8 @@ import org.mongodb.morphia.annotations.Entity;
 import org.mongodb.morphia.annotations.Transient;
 import org.mongodb.morphia.mapping.Mapper;
 import org.osgl.$;
+import org.osgl.logging.LogManager;
+import org.osgl.logging.Logger;
 import org.osgl.storage.ISObject;
 import org.osgl.storage.IStorageService;
 import org.osgl.util.S;
@@ -23,6 +25,8 @@ import java.util.List;
  * hook to {@link act.db.morphia.MorphiaPlugin morphia db layer}
  */
 public class MorphiaDbHooker implements DbHooker {
+
+    private static Logger logger = LogManager.get(MorphiaDbHooker.class);
 
     private Mapper mapper;
     private StorageServiceManager ssm;
@@ -72,6 +76,8 @@ public class MorphiaDbHooker implements DbHooker {
 
 class StorageFieldConverter extends AbstractEntityInterceptor implements EntityInterceptor {
 
+    private static Logger logger = LogManager.get(MorphiaDbHooker.class);
+
     private StorageServiceManager ssm;
 
     StorageFieldConverter(StorageServiceManager ssm) {
@@ -81,7 +87,6 @@ class StorageFieldConverter extends AbstractEntityInterceptor implements EntityI
     @Override
     public void postLoad(Object ent, DBObject dbObj, Mapper mapper) {
         Class c = ent.getClass();
-        String cn = c.getName();
         List<String> storageFields = ssm.managedFields(c);
         for (String fieldName : storageFields) {
             String key = ((BasicDBObject) dbObj).getString(fieldName);
@@ -89,10 +94,12 @@ class StorageFieldConverter extends AbstractEntityInterceptor implements EntityI
                 continue;
             }
             IStorageService ss = ssm.storageService(c, fieldName);
-            ISObject sobj = ss.get(key);
-            if (null != sobj) {
+            try {
+                ISObject sobj = ss.get(key);
                 $.setProperty(ent, sobj, fieldName);
                 $.setProperty(ent, key, StorageServiceManager.keyCacheField(fieldName));
+            } catch (Exception e) {
+                logger.warn(e, "Error loading sobject by key: %s", key);
             }
         }
     }
@@ -100,7 +107,6 @@ class StorageFieldConverter extends AbstractEntityInterceptor implements EntityI
     @Override
     public void prePersist(Object ent, DBObject dbObj, Mapper mapper) {
         Class c = ent.getClass();
-        String cn = c.getName();
         List<String> storageFields = ssm.managedFields(c);
         for (String fieldName : storageFields) {
             UpdatePolicy updatePolicy = ssm.updatePolicy(c, fieldName);
@@ -114,9 +120,13 @@ class StorageFieldConverter extends AbstractEntityInterceptor implements EntityI
                 if (S.blank(newKey)) {
                     newKey = ss.getKey();
                 } else if (S.neq(newKey, prevKey)) {
-                    sobj = ss.put(newKey, sobj);
-                    $.setProperty(ent, newKey, keyCacheField);
-                    $.setProperty(ent, sobj, fieldName);
+                    try {
+                        sobj = ss.put(newKey, sobj);
+                        $.setProperty(ent, newKey, keyCacheField);
+                        $.setProperty(ent, sobj, fieldName);
+                    } catch (Exception e) {
+                        logger.warn(e, "Error loading sobject by key: %s", newKey);
+                    }
                 }
                 dbObj.put(fieldName, sobj.getKey());
             }

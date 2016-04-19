@@ -32,7 +32,7 @@ public class EntityClassEnhancer extends AppByteCodeEnhancer<EntityClassEnhancer
     private List<String> managedFields = C.newList();
 
     public EntityClassEnhancer() {
-        super($.F.<String>yes());
+        super(S.F.startsWith("act.").negate().or(S.F.startsWith("act.fsa")));
     }
 
     @Override
