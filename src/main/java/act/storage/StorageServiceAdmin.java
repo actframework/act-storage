@@ -60,7 +60,7 @@ public class StorageServiceAdmin {
         ssm = app.singleton(StorageServiceManager.class);
     }
 
-    @Command(value = "act.ss.list", help = "List all storage field info")
+    @Command(value = "act.ss.list, act.ss.print", help = "List all storage field info")
     @PropertySpec("className,fieldName,updatePolicy,serviceId,contextPath")
     public Collection<FieldServiceInfo> listSObjectFields() {
         Set<String> fields = ssm.storageFields();
