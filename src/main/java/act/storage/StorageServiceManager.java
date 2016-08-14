@@ -5,7 +5,7 @@ import act.app.App;
 import act.app.AppService;
 import act.app.event.AppEventId;
 import act.conf.AppConfig;
-import act.di.DependencyInjectionBinder;
+import act.inject.DependencyInjectionBinder;
 import act.plugin.AppServicePlugin;
 import act.storage.db.DbHooker;
 import act.storage.db.util.Setter;
@@ -19,7 +19,9 @@ import org.osgl.util.C;
 import org.osgl.util.E;
 import org.osgl.util.S;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Singleton;
+import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -97,6 +99,11 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
             }
         });
         app.eventBus().emit(new StorageServiceManagerInitialized(this));
+    }
+
+    @Override
+    public Class<? extends Annotation> scope() {
+        return ApplicationScoped.class;
     }
 
     private static String ssKey(String className, String fieldName) {

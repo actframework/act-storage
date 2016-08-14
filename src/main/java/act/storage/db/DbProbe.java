@@ -37,7 +37,7 @@ public abstract class DbProbe extends AppServicePlugin {
                 @Override
                 public void run() {
                     Class<DbHooker> hookerClass = $.classForName(dbHookerClass(), app.classLoader());
-                    final DbHooker hooker = app.newInstance(hookerClass);
+                    final DbHooker hooker = app.getInstance(hookerClass);
                     StorageServiceManager ssm = StorageServiceManager.instance();
                     if (null != ssm) {
                         ssm.addDbHooker(hooker);
