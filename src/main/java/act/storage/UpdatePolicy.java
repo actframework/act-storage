@@ -39,7 +39,7 @@ public enum UpdatePolicy {
             if (S.blank(prevKey)) {
                 return;
             }
-            if (null != updatedObject && S.neq(prevKey, updatedObject.getKey())) {
+            if (null == updatedObject || S.neq(prevKey, updatedObject.getKey())) {
                 storageService.remove(prevKey);
             }
         }

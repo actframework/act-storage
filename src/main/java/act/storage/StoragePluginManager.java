@@ -6,6 +6,7 @@ import act.plugin.Plugin;
 import act.util.DestroyableBase;
 import org.osgl.util.C;
 
+import javax.enterprise.context.ApplicationScoped;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,7 +20,7 @@ public class StoragePluginManager extends DestroyableBase implements Plugin {
     @Override
     protected void releaseResources() {
         super.releaseResources();
-        DestroyableBase.Util.tryDestroyAll(plugins.values());
+        DestroyableBase.Util.tryDestroyAll(plugins.values(), ApplicationScoped.class);
         plugins.clear();
     }
 

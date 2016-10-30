@@ -302,7 +302,7 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
         Map<String, String> storageConfig = config.subSet("ss.");
         if (storageConfig.isEmpty()) {
             if (null == storagePlugin) {
-                logger.warn("Storage service not intialized: need to specify default storage service implementation");
+                logger.warn("Storage service not initialized: need to specify default storage service implementation");
                 return;
             } else {
                 logger.warn("Storage configuration not found. Will try to init default service with the sole storage plugin: %s", storagePlugin);

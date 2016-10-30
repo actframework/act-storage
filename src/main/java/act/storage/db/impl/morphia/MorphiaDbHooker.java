@@ -1,7 +1,10 @@
 package act.storage.db.impl.morphia;
 
+import act.Act;
 import act.app.App;
+import act.db.DeleteEvent;
 import act.db.morphia.MorphiaService;
+import act.event.ActEventListenerBase;
 import act.storage.StorageServiceManager;
 import act.storage.UpdatePolicy;
 import act.storage.db.DbHooker;
@@ -13,12 +16,14 @@ import org.mongodb.morphia.annotations.Entity;
 import org.mongodb.morphia.annotations.Transient;
 import org.mongodb.morphia.mapping.Mapper;
 import org.osgl.$;
+import org.osgl.cache.CacheService;
 import org.osgl.logging.LogManager;
 import org.osgl.logging.Logger;
 import org.osgl.storage.ISObject;
 import org.osgl.storage.IStorageService;
 import org.osgl.util.S;
 
+import java.util.EventObject;
 import java.util.List;
 
 /**
@@ -80,8 +85,35 @@ class StorageFieldConverter extends AbstractEntityInterceptor implements EntityI
 
     private StorageServiceManager ssm;
 
+    private CacheService cacheService;
+
     StorageFieldConverter(StorageServiceManager ssm) {
         this.ssm = $.notNull(ssm);
+        cacheService = Act.cache();
+        Act.app().eventBus().bindAsync(DeleteEvent.class, new ActEventListenerBase<DeleteEvent>() {
+            @Override
+            public void on(DeleteEvent eventObject) throws Exception {
+                onDelete(eventObject.getSource());
+            }
+        });
+    }
+
+    private void onDelete(Object entity) {
+        Class c = entity.getClass();
+        List<String> storageFields = ssm.managedFields(c);
+        for (String fieldName : storageFields) {
+            String keyCacheField = StorageServiceManager.keyCacheField(fieldName);;
+            String key = $.getProperty(cacheService, entity, keyCacheField);
+            if (S.blank(key)) {
+                continue;
+            }
+            IStorageService ss = ssm.storageService(c, fieldName);
+            try {
+                ss.remove(key);
+            } catch (Exception e) {
+                logger.warn(e, "Error deleting sobject by key: %s", key);
+            }
+        }
     }
 
     @Override
@@ -112,18 +144,19 @@ class StorageFieldConverter extends AbstractEntityInterceptor implements EntityI
             UpdatePolicy updatePolicy = ssm.updatePolicy(c, fieldName);
             IStorageService ss = ssm.storageService(c, fieldName);
             String keyCacheField = StorageServiceManager.keyCacheField(fieldName);
-            ISObject sobj = $.getProperty(ent, fieldName);
-            String prevKey = $.getProperty(ent, keyCacheField);
+            ISObject sobj = $.getProperty(cacheService, ent, fieldName);
+            String prevKey = $.getProperty(cacheService, ent, keyCacheField);
             updatePolicy.handleUpdate(prevKey, sobj, ss);
             if (null != sobj) {
                 String newKey = sobj.getKey();
-                if (S.blank(newKey)) {
+                if (S.blank(newKey) || !ss.isManaged(sobj)) {
                     newKey = ss.getKey();
-                } else if (S.neq(newKey, prevKey)) {
+                }
+                if (S.neq(newKey, prevKey)) {
                     try {
                         sobj = ss.put(newKey, sobj);
-                        $.setProperty(ent, newKey, keyCacheField);
-                        $.setProperty(ent, sobj, fieldName);
+                        $.setProperty(cacheService, ent, newKey, keyCacheField);
+                        $.setProperty(cacheService, ent, sobj, fieldName);
                     } catch (Exception e) {
                         logger.warn(e, "Error loading sobject by key: %s", newKey);
                     }

@@ -27,7 +27,7 @@ public abstract class StoragePlugin extends DestroyableBase implements Plugin {
         Map<String, String> map = C.newMap();
         for (String key : conf.keySet()) {
             String val = conf.get(key);
-            if (!key.startsWith(prefix) && S.neq("storage.id", key)) {
+            if (!key.startsWith("storage")) {
                 key = prefix + key;
             }
             map.put(key, val);
