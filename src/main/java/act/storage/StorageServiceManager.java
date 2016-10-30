@@ -228,8 +228,8 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
             return;
         }
         isDestroyed = true;
-        Destroyable.Util.tryDestroyAll(serviceById.values());
-        Destroyable.Util.tryDestroyAll(dbHookers);
+        Destroyable.Util.tryDestroyAll(serviceById.values(), ApplicationScoped.class);
+        Destroyable.Util.tryDestroyAll(dbHookers, ApplicationScoped.class);
         serviceById.clear();
         serviceByClassField.clear();
         updatePolicyByClassField.clear();
