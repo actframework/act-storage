@@ -312,9 +312,10 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
             }
         }
 
+        String instances = null;
         if (storageConfig.containsKey("ss.instances")) {
-            String instances = storageConfig.get("ss.instances").toString();
-            for (String dbId: instances.split("[,\\s;:]+")) {
+            instances = storageConfig.get("ss.instances").toString();
+            for (String dbId: instances.split(S.COMMON_SEP)) {
                 initService(dbId, storageConfig);
             }
         }
@@ -350,7 +351,13 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
                     serviceById.put(DEFAULT, svc);
                 }
             } else {
-                throw E.invalidConfiguration("Default db service for the application needs to be specified");
+                if (null != instances) {
+                    // use the first instance as the default one
+                    IStorageService svc = serviceById.get(instances.split(S.COMMON_SEP)[0]);
+                    serviceById.put(DEFAULT, $.notNull(svc));
+                } else {
+                    throw E.invalidConfiguration("Default db service for the application needs to be specified");
+                }
             }
         }
     }
