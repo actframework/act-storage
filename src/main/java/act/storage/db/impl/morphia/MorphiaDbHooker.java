@@ -216,8 +216,14 @@ class StorageFieldConverter extends AbstractEntityInterceptor implements EntityI
                 // The field is a collection of ISObject.
                 // 1. handle obsolete sobject items
                 Collection<ISObject> col = $.getProperty(cacheService, ent, fieldName);
+                if (null == col) {
+                    col = C.newList();
+                }
                 Set<String> newKeys = C.newSet();
                 for (ISObject sobj : col) {
+                    if (null == sobj) {
+                        continue;
+                    }
                     newKeys.add(sobj.getKey());
                 }
                 Set<String> oldKeys = $.getProperty(cacheService, ent, keyCacheField);
@@ -227,6 +233,9 @@ class StorageFieldConverter extends AbstractEntityInterceptor implements EntityI
                 Set<String> oldKeysCopy = C.newSet(oldKeys);
                 oldKeysCopy.removeAll(newKeys);
                 for (String toBeRemoved : oldKeysCopy) {
+                    if (S.isBlank(toBeRemoved)) {
+                        continue;
+                    }
                     updatePolicy.handleUpdate(toBeRemoved, null, ss);
                 }
                 // 2. persist all new sobject items
@@ -234,6 +243,9 @@ class StorageFieldConverter extends AbstractEntityInterceptor implements EntityI
                 Collection<ISObject> updatedCol = $.cast(Act.app().getInstance(fieldType));
                 newKeys.clear();
                 for (ISObject sobj : col) {
+                    if (null == sobj) {
+                        continue;
+                    }
                     String newKey = sobj.getKey();
                     if (S.blank(newKey) || !ss.isManaged(sobj)) {
                         newKey = ss.getKey();
