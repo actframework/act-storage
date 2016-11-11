@@ -16,15 +16,17 @@ import org.mongodb.morphia.annotations.Entity;
 import org.mongodb.morphia.annotations.Transient;
 import org.mongodb.morphia.mapping.Mapper;
 import org.osgl.$;
+import org.osgl.Osgl;
 import org.osgl.cache.CacheService;
 import org.osgl.logging.LogManager;
 import org.osgl.logging.Logger;
 import org.osgl.storage.ISObject;
 import org.osgl.storage.IStorageService;
+import org.osgl.util.C;
 import org.osgl.util.S;
 
-import java.util.EventObject;
-import java.util.List;
+import java.lang.reflect.Field;
+import java.util.*;
 
 /**
  * hook to {@link act.db.morphia.MorphiaPlugin morphia db layer}
@@ -87,6 +89,8 @@ class StorageFieldConverter extends AbstractEntityInterceptor implements EntityI
 
     private CacheService cacheService;
 
+    private Map<$.T2<Class, String>, Class> fieldCache = new HashMap<$.T2<Class, String>, Class>();
+
     StorageFieldConverter(StorageServiceManager ssm) {
         this.ssm = $.notNull(ssm);
         cacheService = Act.cache();
@@ -100,18 +104,38 @@ class StorageFieldConverter extends AbstractEntityInterceptor implements EntityI
 
     private void onDelete(Object entity) {
         Class c = entity.getClass();
+        String cn = c.getName();
         List<String> storageFields = ssm.managedFields(c);
         for (String fieldName : storageFields) {
-            String keyCacheField = StorageServiceManager.keyCacheField(fieldName);;
-            String key = $.getProperty(cacheService, entity, keyCacheField);
-            if (S.blank(key)) {
-                continue;
-            }
-            IStorageService ss = ssm.storageService(c, fieldName);
-            try {
-                ss.remove(key);
-            } catch (Exception e) {
-                logger.warn(e, "Error deleting sobject by key: %s", key);
+            boolean isCollection = ssm.isCollection(cn, fieldName);
+            String keyCacheField = StorageServiceManager.keyCacheField(fieldName);
+            ;
+            if (!isCollection) {
+                String key = $.getProperty(cacheService, entity, keyCacheField);
+                if (S.blank(key)) {
+                    continue;
+                }
+                IStorageService ss = ssm.storageService(c, fieldName);
+                try {
+                    ss.remove(key);
+                } catch (Exception e) {
+                    logger.warn(e, "Error deleting sobject by key: %s", key);
+                }
+            } else {
+                Collection<String> keys = $.getProperty(cacheService, entity, keyCacheField);
+                if (null != keys) {
+                    for (String key : keys) {
+                        if (S.blank(key)) {
+                            continue;
+                        }
+                        IStorageService ss = ssm.storageService(c, fieldName);
+                        try {
+                            ss.remove(key);
+                        } catch (Exception e) {
+                            logger.warn(e, "Error deleting sobject by key: %s", key);
+                        }
+                    }
+                }
             }
         }
     }
@@ -119,19 +143,41 @@ class StorageFieldConverter extends AbstractEntityInterceptor implements EntityI
     @Override
     public void postLoad(Object ent, DBObject dbObj, Mapper mapper) {
         Class c = ent.getClass();
+        String cn = c.getName();
         List<String> storageFields = ssm.managedFields(c);
         for (String fieldName : storageFields) {
-            String key = ((BasicDBObject) dbObj).getString(fieldName);
-            if (S.blank(key)) {
-                continue;
-            }
-            IStorageService ss = ssm.storageService(c, fieldName);
-            try {
-                ISObject sobj = ss.get(key);
-                $.setProperty(ent, sobj, fieldName);
-                $.setProperty(ent, key, StorageServiceManager.keyCacheField(fieldName));
-            } catch (Exception e) {
-                logger.warn(e, "Error loading sobject by key: %s", key);
+            boolean isCollection = ssm.isCollection(cn, fieldName);
+            if (!isCollection) {
+                String key = ((BasicDBObject) dbObj).getString(fieldName);
+                if (S.blank(key)) {
+                    continue;
+                }
+                IStorageService ss = ssm.storageService(c, fieldName);
+                try {
+                    ISObject sobj = ss.get(key);
+                    $.setProperty(ent, sobj, fieldName);
+                    $.setProperty(ent, key, StorageServiceManager.keyCacheField(fieldName));
+                } catch (Exception e) {
+                    logger.warn(e, "Error loading sobject by key: %s", key);
+                }
+            } else {
+                IStorageService ss = ssm.storageService(c, fieldName);
+                Class fieldType = fieldType(c, fieldName);
+                Collection<ISObject> sobjs = $.cast(Act.app().getInstance(fieldType));
+                Collection<String> keys = (Collection<String>) ((BasicDBObject) dbObj).get(fieldName);
+                if (null == keys) {
+                    keys = C.list();
+                }
+                for (String key : keys) {
+                    try {
+                        ISObject sobj = ss.get(key);
+                        sobjs.add(sobj);
+                    } catch (Exception e) {
+                        logger.warn(e, "Error loading sobject by key: %s", key);
+                    }
+                }
+                $.setProperty(ent, sobjs, fieldName);
+                $.setProperty(ent, keys, StorageServiceManager.keyCacheField(fieldName));
             }
         }
     }
@@ -139,31 +185,84 @@ class StorageFieldConverter extends AbstractEntityInterceptor implements EntityI
     @Override
     public void prePersist(Object ent, DBObject dbObj, Mapper mapper) {
         Class c = ent.getClass();
+        String cn = c.getName();
         List<String> storageFields = ssm.managedFields(c);
         for (String fieldName : storageFields) {
             UpdatePolicy updatePolicy = ssm.updatePolicy(c, fieldName);
             IStorageService ss = ssm.storageService(c, fieldName);
             String keyCacheField = StorageServiceManager.keyCacheField(fieldName);
-            ISObject sobj = $.getProperty(cacheService, ent, fieldName);
-            String prevKey = $.getProperty(cacheService, ent, keyCacheField);
-            updatePolicy.handleUpdate(prevKey, sobj, ss);
-            if (null != sobj) {
-                String newKey = sobj.getKey();
-                if (S.blank(newKey) || !ss.isManaged(sobj)) {
-                    newKey = ss.getKey();
+            boolean isCollection = ssm.isCollection(cn, fieldName);
+            if (!isCollection) {
+                ISObject sobj = $.getProperty(cacheService, ent, fieldName);
+                String newKey = null == sobj ? null : sobj.getKey();
+                String prevKey = $.getProperty(cacheService, ent, keyCacheField);
+                updatePolicy.handleUpdate(prevKey, newKey, ss);
+                if (null != sobj) {
+                    if (S.blank(newKey) || !ss.isManaged(sobj)) {
+                        newKey = ss.getKey();
+                    }
+                    if (S.neq(newKey, prevKey)) {
+                        try {
+                            sobj = ss.put(newKey, sobj);
+                            $.setProperty(cacheService, ent, newKey, keyCacheField);
+                            $.setProperty(cacheService, ent, sobj, fieldName);
+                        } catch (Exception e) {
+                            logger.warn(e, "Error persist sobject by key: %s", newKey);
+                        }
+                    }
+                    dbObj.put(fieldName, sobj.getKey());
                 }
-                if (S.neq(newKey, prevKey)) {
-                    try {
-                        sobj = ss.put(newKey, sobj);
-                        $.setProperty(cacheService, ent, newKey, keyCacheField);
-                        $.setProperty(cacheService, ent, sobj, fieldName);
-                    } catch (Exception e) {
-                        logger.warn(e, "Error loading sobject by key: %s", newKey);
+            } else {
+                // The field is a collection of ISObject.
+                // 1. handle obsolete sobject items
+                Collection<ISObject> col = $.getProperty(cacheService, ent, fieldName);
+                Set<String> newKeys = C.newSet();
+                for (ISObject sobj : col) {
+                    newKeys.add(sobj.getKey());
+                }
+                Set<String> oldKeys = $.getProperty(cacheService, ent, keyCacheField);
+                if (null == oldKeys) {
+                    oldKeys = C.newSet();
+                }
+                Set<String> oldKeysCopy = C.newSet(oldKeys);
+                oldKeysCopy.removeAll(newKeys);
+                for (String toBeRemoved : oldKeysCopy) {
+                    updatePolicy.handleUpdate(toBeRemoved, null, ss);
+                }
+                // 2. persist all new sobject items
+                Class fieldType = fieldType(c, fieldName);
+                Collection<ISObject> updatedCol = $.cast(Act.app().getInstance(fieldType));
+                newKeys.clear();
+                for (ISObject sobj : col) {
+                    String newKey = sobj.getKey();
+                    if (S.blank(newKey) || !ss.isManaged(sobj)) {
+                        newKey = ss.getKey();
+                    }
+                    if (!oldKeys.contains(newKey)) {
+                        try {
+                            sobj = ss.put(newKey, sobj);
+                            updatedCol.add(sobj);
+                            newKeys.add(sobj.getKey());
+                        } catch (Exception e) {
+                            logger.warn(e, "Error persist sobject by key: %s", newKey);
+                        }
                     }
                 }
-                dbObj.put(fieldName, sobj.getKey());
+                $.setProperty(cacheService, ent, newKeys, keyCacheField);
+                $.setProperty(cacheService, ent, updatedCol, fieldName);
+                dbObj.put(fieldName, newKeys);
             }
         }
     }
 
+    private Class<?> fieldType(Class hostClass, String fieldName) {
+        $.T2<Class, String> fieldCacheKey = $.T2(hostClass, fieldName);
+        Class fieldType = fieldCache.get(fieldCacheKey);
+        if (null == fieldType) {
+            Field field = $.fieldOf(hostClass, fieldName, false);
+            fieldType = field.getType();
+            fieldCache.put(fieldCacheKey, fieldType);
+        }
+        return fieldType;
+    }
 }

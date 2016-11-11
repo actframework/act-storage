@@ -49,6 +49,11 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
      */
     private Map<String, IStorageService> serviceByClassField = C.newMap();
 
+    /**
+     * map class name plus field name to boolean indicate if the field is collection
+     */
+    private Map<String, Boolean> fieldTypeMap = C.newMap();
+
     private Map<$.T2<Class, String>, $.Val<IStorageService>> serviceByClass = C.newMap();
 
     /**
@@ -116,7 +121,7 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
         return sb.toString();
     }
 
-    public void registerServiceIndex(String className, String fieldName, String serviceId, String contextPath, UpdatePolicy updatePolicy) {
+    public void registerServiceIndex(String className, String fieldName, boolean isCollection, String serviceId, String contextPath, UpdatePolicy updatePolicy) {
         if (S.blank(serviceId)) {
             serviceId = DEFAULT;
         }
@@ -135,10 +140,17 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
         }
         String key = ssKey(className, fieldName);
         serviceByClassField.put(key, ss);
+        fieldTypeMap.put(key, isCollection);
 
         if (null != updatePolicy) {
             updatePolicyByClassField.put(key, updatePolicy);
         }
+    }
+
+    public boolean isCollection(String className, String fieldName) {
+        String key = ssKey(className, fieldName);
+        Boolean b = fieldTypeMap.get(key);
+        return null == b ? false : b;
     }
 
     public Set<String> storageFields() {

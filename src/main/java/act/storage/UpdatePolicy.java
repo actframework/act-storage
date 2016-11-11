@@ -15,13 +15,13 @@ public enum UpdatePolicy {
      */
     REJECT () {
         @Override
-        public void handleUpdate(String prevKey, ISObject updatedObject, IStorageService storageService) {
-            if (null == updatedObject) {
+        public void handleUpdate(String prevKey, String newKey, IStorageService storageService) {
+            if (null == newKey) {
                 if (S.blank(prevKey)) {
                     return;
                 }
                 throw new IllegalStateException("sobject is read only");
-            } else if (S.neq(prevKey, updatedObject.getKey())) {
+            } else if (S.neq(prevKey, newKey)) {
                 throw new IllegalStateException("sobject is read only");
             }
         }
@@ -35,11 +35,11 @@ public enum UpdatePolicy {
      */
     DELETE_OLD_DATA () {
         @Override
-        public void handleUpdate(String prevKey, ISObject updatedObject, IStorageService storageService) {
+        public void handleUpdate(String prevKey, String newKey, IStorageService storageService) {
             if (S.blank(prevKey)) {
                 return;
             }
-            if (null == updatedObject || S.neq(prevKey, updatedObject.getKey())) {
+            if (null == newKey || S.neq(prevKey, newKey)) {
                 storageService.remove(prevKey);
             }
         }
@@ -52,5 +52,5 @@ public enum UpdatePolicy {
      */
     KEEP_OLD_DATA;
 
-    public void handleUpdate(String prevKey, ISObject updatedObject, IStorageService storageService) {}
+    public void handleUpdate(String prevKey, String newKey, IStorageService storageService) {}
 }

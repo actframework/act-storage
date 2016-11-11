@@ -11,7 +11,10 @@ import act.asm.Type;
 import act.util.AppCodeScannerPluginBase;
 import act.util.ByteCodeVisitor;
 import org.osgl.$;
+import org.osgl.util.C;
 import org.osgl.util.S;
+
+import java.util.Set;
 
 /**
  * Scan classes and find fields with type {@link org.osgl.storage.ISObject}
@@ -112,19 +115,38 @@ public class SObjectFieldScanner extends AppCodeScannerPluginBase {
         public void visitEnd() {
             super.visitEnd();
             if (managed) {
-                storageServiceManager().registerServiceIndex(className, null, serviceId, contextPath, updatePolicy);
+                storageServiceManager().registerServiceIndex(className, null, false, serviceId, contextPath, updatePolicy);
+            }
+        }
+
+        private static final Set<String> SUPPORTED_STORE_FIELD_DESCS = C.set(
+                "Lorg/osgl/storage/ISObject;",
+                "Lorg/osgl/storage/impl/SObject;");
+
+        private static final Set<String> SUPPORTED_STORE_FIELD_SIGNATURES = C.set(
+                "Ljava/util/List<Lorg/osgl/storage/ISObject;>;",
+                "Ljava/util/List<Lorg/osgl/storage/SObject;>;",
+                "Ljava/util/Set<Lorg/osgl/storage/ISObject;>;",
+                "Ljava/util/Set<Lorg/osgl/storage/SObject;>;"
+                );
+
+        private static boolean isSObjectField(String desc, String signature) {
+            if (null != signature) {
+                return SUPPORTED_STORE_FIELD_SIGNATURES.contains(signature);
+            } else {
+                return SUPPORTED_STORE_FIELD_DESCS.contains(desc);
             }
         }
 
         @Override
-        public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
+        public FieldVisitor visitField(int access, String name, String desc, final String signature, Object value) {
             FieldVisitor fv = super.visitField(access, name, desc, signature, value);
 
             boolean isStatic = ((access & ACC_STATIC) != 0);
             if (isStatic) {
                 return fv;
             }
-            if (desc.equals("Lorg/osgl/storage/ISObject;") || desc.equals("Lorg/osgl/storage/impl/SObject;")) {
+            if (isSObjectField(desc, signature)) {
                 final String fieldName = name;
                 return new FieldVisitor(ASM5, fv) {
 
@@ -132,6 +154,7 @@ public class SObjectFieldScanner extends AppCodeScannerPluginBase {
                     private String contextPath = "";
                     private boolean managed = false;
                     private UpdatePolicy updatePolicy = UpdatePolicy.DELETE_OLD_DATA;
+                    private boolean isCollection = null != signature;
 
                     @Override
                     public AnnotationVisitor visitAnnotation(final String desc, boolean visible) {
@@ -175,7 +198,7 @@ public class SObjectFieldScanner extends AppCodeScannerPluginBase {
                             if (S.blank(contextPath)) {
                                 contextPath = _ByteCodeVisitor.this.contextPath;
                             }
-                            storageServiceManager().registerServiceIndex(className, fieldName, serviceId, contextPath, updatePolicy);
+                            storageServiceManager().registerServiceIndex(className, fieldName, isCollection, serviceId, contextPath, updatePolicy);
                         }
                     }
                 };

@@ -18,7 +18,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Enhance entity class that has fields with managed sobject fields
+ * Enhance entity class that has fields with managed sobject fields:
+ * - Add @Transient annotation to sobject field
+ * - Add corresponding sobject key field
  */
 @ActComponent
 public class EntityClassEnhancer extends AppByteCodeEnhancer<EntityClassEnhancer> {
@@ -27,12 +29,11 @@ public class EntityClassEnhancer extends AppByteCodeEnhancer<EntityClassEnhancer
     private String cn;
     private StorageServiceManager ssm;
     private List<DbHooker> dbHookers = C.list();
-    //private Map<DbHooker, Boolean> entityAnnotationState = C.newMap();
     private Map<DbHooker, Set<String>> transientAnnotationState = C.newMap();
     private List<String> managedFields = C.newList();
 
     public EntityClassEnhancer() {
-        super(S.F.startsWith("act.").negate().or(S.F.startsWith("act.fsa")));
+        super(S.F.startsWith("act.").negate());
     }
 
     @Override
@@ -56,17 +57,6 @@ public class EntityClassEnhancer extends AppByteCodeEnhancer<EntityClassEnhancer
         }
     }
 
-//    @Override
-//    public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-//        Type type = Type.getType(desc);
-//        for (DbHooker hooker : dbHookers) {
-//            if (Type.getType(hooker.entityAnnotation()).equals(type)) {
-//                entityAnnotationState.put(hooker, true);
-//            }
-//        }
-//        return super.visitAnnotation(desc, visible);
-//    }
-//
     @Override
     public FieldVisitor visitField(int access, final String name, String desc, String signature, Object value) {
         final FieldVisitor fv = super.visitField(access, name, desc, signature, value);
@@ -86,8 +76,8 @@ public class EntityClassEnhancer extends AppByteCodeEnhancer<EntityClassEnhancer
 
                 @Override
                 public void visitEnd() {
-                    for (DbHooker hooker : dbHookers) {
-                        if (shouldEnhance(hooker)) {
+                    if (shouldEnhance()) {
+                        for (DbHooker hooker : dbHookers) {
                             if (!transientAnnotationState.get(hooker).contains(name)) {
                                 AnnotationVisitor av = fv.visitAnnotation(Type.getType(hooker.transientAnnotationType()).getDescriptor(), true);
                                 av.visitEnd();
@@ -104,38 +94,33 @@ public class EntityClassEnhancer extends AppByteCodeEnhancer<EntityClassEnhancer
     @Override
     public void visitEnd() {
         StorageServiceManager ssm = ssm();
-        for (DbHooker hooker : dbHookers) {
-            if (shouldEnhance(hooker)) {
+        if (shouldEnhance()) {
+            for (DbHooker hooker : dbHookers) {
                 for (String fn : ssm.managedFields(cn)) {
-                    doEnhanceOn(fn, hooker);
+                    boolean isCollection = ssm.isCollection(cn, fn);
+                    doEnhanceOn(fn, hooker, isCollection);
                 }
             }
         }
         super.visitEnd();
     }
 
-    private void doEnhanceOn(String sobjField, DbHooker hooker) {
-        addKeyField(sobjField, hooker);
+    private void doEnhanceOn(String sobjField, DbHooker hooker, boolean isCollection) {
+        addKeyField(sobjField, isCollection, hooker);
     }
 
-    private void addKeyField(String sobjField, DbHooker hooker) {
+    private void addKeyField(String sobjField, boolean isCollection, DbHooker hooker) {
         String fieldName = S.builder(sobjField).append("Key").toString();
-        FieldVisitor fv = cv.visitField(ACC_PRIVATE, fieldName, AsmTypes.STRING_DESC, null, null);
+        String desc = isCollection ? "Ljava/util/Set;" : AsmTypes.STRING_DESC;
+        String signature = isCollection ? "Ljava/util/Set<Ljava/lang/String;>;" : null;
+        FieldVisitor fv = cv.visitField(ACC_PRIVATE, fieldName, desc, signature, null);
         AnnotationVisitor av = fv.visitAnnotation(Type.getType(hooker.transientAnnotationType()).getDescriptor(), true);
         av.visitEnd();
         fv.visitEnd();
     }
 
-    private void addTransientAnnotation(String sobjField, DbHooker hooker) {
-        $.nil();
-    }
-
-    private boolean shouldAddTransientAnnotation(String sobjField, DbHooker hooker) {
-        return !transientAnnotationState.get(hooker).contains(sobjField);
-    }
-
-    private boolean shouldEnhance(DbHooker hooker) {
-        return hasManagedFields /* && entityAnnotationState.containsKey(hooker) && entityAnnotationState.get(hooker)*/;
+    private boolean shouldEnhance() {
+        return hasManagedFields;
     }
 
     private synchronized StorageServiceManager ssm() {
