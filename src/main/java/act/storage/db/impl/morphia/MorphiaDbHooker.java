@@ -109,7 +109,6 @@ class StorageFieldConverter extends AbstractEntityInterceptor implements EntityI
         for (String fieldName : storageFields) {
             boolean isCollection = ssm.isCollection(cn, fieldName);
             String keyCacheField = StorageServiceManager.keyCacheField(fieldName);
-            ;
             if (!isCollection) {
                 String key = $.getProperty(cacheService, entity, keyCacheField);
                 if (S.blank(key)) {
