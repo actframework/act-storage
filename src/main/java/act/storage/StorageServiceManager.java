@@ -186,7 +186,7 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
                 serviceByClass.put(key, val);
                 return ss;
             }
-            val = $.val((IStorageService) null);
+            val = $.val(null);
             serviceByClass.put(key, val);
         }
         return val.get();

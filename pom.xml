@@ -15,6 +15,8 @@
   ~ under the License.
   -->
 <!-- version history
+v0.3.1
+ - update to actframework 0.3.1
 v0.3.0
  - update to actframework 0.3.0
  - update to osgl-storage 0.7.3
@@ -37,7 +39,7 @@ v0.1.0
   <groupId>org.actframework</groupId>
   <artifactId>act-storage</artifactId>
   <packaging>jar</packaging>
-  <version>0.3.0-SNAPSHOT</version>
+  <version>0.3.1-SNAPSHOT</version>
 
   <name>ACT Storage</name>
   <description>Enable easy to use osgl-storage in an ActFramework application</description>
@@ -47,6 +49,11 @@ v0.1.0
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <git.url>git@github.com:actframework/act-storage.git</git.url>
+    <java.version>1.7</java.version>
+    <act.version>0.3.1-SNAPSHOT</act.version>
+    <act-morphia.version>0.4.1-SNAPSHOT</act-morphia.version>
+    <act-ebean.version>0.3.1-SNAPSHOT</act-ebean.version>
+    <mockito-core.version>2.7.0</mockito-core.version>
   </properties>
 
   <parent>
@@ -84,10 +91,8 @@ v0.1.0
           <artifactId>maven-compiler-plugin</artifactId>
           <version>3.3</version>
           <configuration>
-            <source>1.6</source>
-            <target>1.6</target>
-            <debug>true</debug>
-            <debuglevel>lines,vars,source</debuglevel>
+            <source>${java.version}</source>
+            <target>${java.version}</target>
           </configuration>
         </plugin>
         <plugin>
@@ -114,28 +119,28 @@ v0.1.0
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>2.0.2-beta</version>
+      <version>${mockito-core.version}</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.actframework</groupId>
       <artifactId>act</artifactId>
-      <version>0.3.0-SNAPSHOT</version>
+      <version>${act.version}</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>org.actframework</groupId>
       <artifactId>act-morphia</artifactId>
-      <version>0.3.0-SNAPSHOT</version>
+      <version>${act-morphia.version}</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>org.actframework</groupId>
       <artifactId>act-ebean</artifactId>
-      <version>0.2.0-SNAPSHOT</version>
+      <version>${act-ebean.version}</version>
       <scope>provided</scope>
     </dependency>
 

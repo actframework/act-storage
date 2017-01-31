@@ -93,7 +93,7 @@ class StorageFieldConverter extends AbstractEntityInterceptor implements EntityI
 
     StorageFieldConverter(StorageServiceManager ssm) {
         this.ssm = $.notNull(ssm);
-        cacheService = Act.cache();
+        this.cacheService = Act.app().cache("storage-morphia");
         Act.app().eventBus().bindAsync(DeleteEvent.class, new ActEventListenerBase<DeleteEvent>() {
             @Override
             public void on(DeleteEvent eventObject) throws Exception {

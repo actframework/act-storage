@@ -1,6 +1,8 @@
 package act.storage.db.impl.ebean;
 
+import act.Act;
 import act.app.App;
+import act.db.DeleteEvent;
 import act.db.ebean.PreEbeanCreation;
 import act.db.morphia.MorphiaService;
 import act.event.ActEventListenerBase;
@@ -12,7 +14,9 @@ import com.avaje.ebean.config.ServerConfig;
 import com.avaje.ebean.event.BeanPersistAdapter;
 import com.avaje.ebean.event.BeanPersistController;
 import com.avaje.ebean.event.BeanPersistRequest;
+import com.avaje.ebean.event.BeanPostLoad;
 import org.osgl.$;
+import org.osgl.cache.CacheService;
 import org.osgl.storage.ISObject;
 import org.osgl.storage.IStorageService;
 import org.osgl.util.S;
@@ -48,7 +52,10 @@ public class EbeanDbHooker implements DbHooker {
             @Override
             public void on(PreEbeanCreation event) throws Exception {
                 ServerConfig config = event.source();
-                config.add(new StorageFieldConverter(ssm()));
+                BeanPostLoad postLoad = new StorageFieldConverter(ssm());
+                config.add(postLoad);
+                BeanPersistController persistController = (BeanPersistController) postLoad;
+                config.add(persistController);
             }
         });
     }
@@ -71,32 +78,41 @@ public class EbeanDbHooker implements DbHooker {
     }
 }
 
-class StorageFieldConverter extends BeanPersistAdapter implements BeanPersistController {
+class StorageFieldConverter extends BeanPersistAdapter implements BeanPersistController, BeanPostLoad {
 
     private StorageServiceManager ssm;
+    private CacheService cacheService;
 
     StorageFieldConverter(StorageServiceManager ssm) {
         this.ssm = $.notNull(ssm);
+        this.cacheService = Act.app().cache("storage-ebean");
     }
 
     @Override
     public boolean isRegisterFor(Class<?> cls) {
-        return false;
+        return ssm.managedFields(cls) != null;
     }
 
     @Override
     public boolean preDelete(BeanPersistRequest<?> request) {
+        System.out.println(">>> about to delete " + request);
         return super.preDelete(request);
     }
 
     @Override
     public boolean preInsert(BeanPersistRequest<?> request) {
+        System.out.println(">>> about to insert " + request);
         return super.preInsert(request);
     }
 
     @Override
     public boolean preUpdate(BeanPersistRequest<?> request) {
+        System.out.println(">>> about to update " + request);
         return super.preUpdate(request);
     }
 
+    @Override
+    public void postLoad(Object bean) {
+
+    }
 }

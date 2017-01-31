@@ -14,6 +14,6 @@ public class EbeanDbProbe extends DbProbe {
 
     @Override
     public String dbHookerClass() {
-        return "act.storage.db.impl.morphia.MorphiaDbHooker";
+        return "act.storage.db.impl.ebean.EbeanDbHooker";
     }
 }
