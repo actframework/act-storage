@@ -1,18 +1,16 @@
 package act.storage;
 
-import act.ActComponent;
 import act.app.App;
 import act.asm.AnnotationVisitor;
 import act.asm.FieldVisitor;
 import act.asm.Type;
-import act.asm.tree.FieldNode;
 import act.storage.db.DbHooker;
 import act.util.AppByteCodeEnhancer;
 import act.util.AsmTypes;
-import org.osgl.$;
 import org.osgl.util.C;
 import org.osgl.util.S;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,7 +20,6 @@ import java.util.Set;
  * - Add @Transient annotation to sobject field
  * - Add corresponding sobject key field
  */
-@ActComponent
 public class EntityClassEnhancer extends AppByteCodeEnhancer<EntityClassEnhancer> {
 
     private boolean hasManagedFields = false;
@@ -95,28 +92,36 @@ public class EntityClassEnhancer extends AppByteCodeEnhancer<EntityClassEnhancer
     public void visitEnd() {
         StorageServiceManager ssm = ssm();
         if (shouldEnhance()) {
+            Map<String, FieldVisitor> fvMap = new HashMap<>();
             for (DbHooker hooker : dbHookers) {
                 for (String fn : ssm.managedFields(cn)) {
+                    FieldVisitor fv = fvMap.get(fn);
                     boolean isCollection = ssm.isCollection(cn, fn);
-                    doEnhanceOn(fn, hooker, isCollection);
+                    FieldVisitor fv0 = doEnhanceOn(fn, hooker, isCollection, fv);
+                    if (null == fv) {
+                        fvMap.put(fn, fv0);
+                    }
                 }
+            }
+            for (FieldVisitor fv : fvMap.values()) {
+                fv.visitEnd();
             }
         }
         super.visitEnd();
     }
 
-    private void doEnhanceOn(String sobjField, DbHooker hooker, boolean isCollection) {
-        addKeyField(sobjField, isCollection, hooker);
+    private FieldVisitor doEnhanceOn(String sobjField, DbHooker hooker, boolean isCollection, FieldVisitor fv) {
+        return addKeyField(sobjField, isCollection, hooker, fv);
     }
 
-    private void addKeyField(String sobjField, boolean isCollection, DbHooker hooker) {
+    private FieldVisitor addKeyField(String sobjField, boolean isCollection, DbHooker hooker, FieldVisitor fv) {
         String fieldName = S.builder(sobjField).append("Key").toString();
         String desc = isCollection ? "Ljava/util/Set;" : AsmTypes.STRING_DESC;
         String signature = isCollection ? "Ljava/util/Set<Ljava/lang/String;>;" : null;
-        FieldVisitor fv = cv.visitField(ACC_PRIVATE, fieldName, desc, signature, null);
+        fv = null == fv ? cv.visitField(ACC_PRIVATE, fieldName, desc, signature, null) : fv;
         AnnotationVisitor av = fv.visitAnnotation(Type.getType(hooker.transientAnnotationType()).getDescriptor(), true);
         av.visitEnd();
-        fv.visitEnd();
+        return fv;
     }
 
     private boolean shouldEnhance() {
