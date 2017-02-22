@@ -89,6 +89,7 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
 
     @Override
     protected void applyTo(App app) {
+        this.reset();
         this.app = app;
         initServices(app.config());
         app.registerSingleton(this);
@@ -109,6 +110,10 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
     @Override
     public Class<? extends Annotation> scope() {
         return ApplicationScoped.class;
+    }
+
+    private void reset() {
+        isDestroyed = false;
     }
 
     private static String ssKey(String className, String fieldName) {
@@ -244,10 +249,15 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
         Destroyable.Util.tryDestroyAll(dbHookers, ApplicationScoped.class);
         serviceById.clear();
         serviceByClassField.clear();
+        fieldTypeMap.clear();
+        serviceByClass.clear();
         updatePolicyByClassField.clear();
+        updatePolicyByClass.clear();
         managedFieldByClass.clear();
+        managedFieldByClass2.clear();
         setterByClass.clear();
         dbHookers.clear();
+        app = null;
     }
 
     public List<String> managedFields(String className) {
