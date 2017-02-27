@@ -52,7 +52,7 @@ v0.1.0
   <groupId>org.actframework</groupId>
   <artifactId>act-storage</artifactId>
   <packaging>jar</packaging>
-  <version>0.6.0-SNAPSHOT</version>
+  <version>0.6.0-yb-SNAPSHOT</version>
 
   <name>ACT Storage</name>
   <description>Enable easy to use osgl-storage in an ActFramework application</description>
@@ -63,9 +63,9 @@ v0.1.0
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <git.url>git@github.com:actframework/act-storage.git</git.url>
     <java.version>1.7</java.version>
-    <act.version>0.6.0-SNAPSHOT</act.version>
-    <act-morphia.version>0.6.0-SNAPSHOT</act-morphia.version>
-    <act-ebean.version>0.6.0-SNAPSHOT</act-ebean.version>
+    <act.version>0.6.0-yb-SNAPSHOT</act.version>
+    <act-morphia.version>0.6.0-yb-SNAPSHOT</act-morphia.version>
+    <act-ebean.version>0.6.0-yb-SNAPSHOT</act-ebean.version>
     <mockito-core.version>2.7.0</mockito-core.version>
   </properties>
 
