@@ -15,6 +15,8 @@
   ~ under the License.
   -->
 <!-- version history
+v0.8.0
+- update to actframework 1.0
 v0.7.0
  - update to actframework 0.7.0
  - update to act-mophia 0.7.0
@@ -56,7 +58,7 @@ v0.1.0
   <groupId>org.actframework</groupId>
   <artifactId>act-storage</artifactId>
   <packaging>jar</packaging>
-  <version>0.7.0-SNAPSHOT</version>
+  <version>0.8.0-SNAPSHOT</version>
 
   <name>ACT Storage</name>
   <description>Enable easy to use osgl-storage in an ActFramework application</description>
@@ -67,9 +69,9 @@ v0.1.0
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <git.url>git@github.com:actframework/act-storage.git</git.url>
     <java.version>1.7</java.version>
-    <act.version>0.7.0-SNAPSHOT</act.version>
-    <act-morphia.version>0.7.0-SNAPSHOT</act-morphia.version>
-    <act-ebean.version>0.7.0-SNAPSHOT</act-ebean.version>
+    <act.version>[1.0.0,2.0.0)</act.version>
+    <act-morphia.version>[1.0.0,2.0.0)</act-morphia.version>
+    <act-ebean.version>[1.0.0,2.0.0)</act-ebean.version>
     <mockito-core.version>2.7.0</mockito-core.version>
   </properties>
 
@@ -80,9 +82,9 @@ v0.1.0
   </parent>
 
   <scm>
-    <connection>scm:git:{git.url}</connection>
-    <developerConnection>scm:git:{git.url}</developerConnection>
-    <url>{git.url}</url>
+    <connection>scm:git:${git.url}</connection>
+    <developerConnection>scm:git:${git.url}</developerConnection>
+    <url>${git.url}</url>
   </scm>
 
   <licenses>
@@ -119,6 +121,37 @@ v0.1.0
           <configuration>
             <includePom>true</includePom>
           </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>2.9</version>
+          <configuration>
+            <stylesheetfile>src/etc/javadoc.css</stylesheetfile>
+            <quiet />
+            <doclet>ch.raffael.doclets.pegdown.PegdownDoclet</doclet>
+            <docletArtifact>
+              <groupId>ch.raffael.pegdown-doclet</groupId>
+              <artifactId>pegdown-doclet</artifactId>
+              <version>1.1</version>
+            </docletArtifact>
+            <useStandardDocletOptions>true</useStandardDocletOptions>
+          </configuration>
+          <executions>
+            <execution>
+              <id>gen-javadoc</id>
+              <phase>prepare-package</phase>
+              <goals>
+                <goal>javadoc</goal>
+              </goals>
+            </execution>
+            <execution>
+              <id>attach-javadocs</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+            </execution>
+          </executions>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -162,83 +195,5 @@ v0.1.0
     </dependency>
 
   </dependencies>
-
-  <profiles>
-    <profile>
-      <id>dist</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <version>2.2</version>
-            <configuration>
-              <descriptors>
-                <descriptor>${basedir}/assembly-dist.xml</descriptor>
-              </descriptors>
-              <tarLongFileMode>gnu</tarLongFileMode>
-            </configuration>
-            <executions>
-              <execution>
-                <id>make-assembly</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>single</goal>
-                </goals>
-                <configuration>
-                  <descriptors>
-                    <descriptor>${basedir}/assembly-dist.xml</descriptor>
-                  </descriptors>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-javadoc-plugin</artifactId>
-            <version>2.9</version>
-            <configuration>
-              <stylesheetfile>src/etc/javadoc.css</stylesheetfile>
-              <quiet />
-            </configuration>
-            <executions>
-              <execution>
-                <id>gen-javadoc</id>
-                <phase>prepare-package</phase>
-                <goals>
-                  <goal>javadoc</goal>
-                </goals>
-              </execution>
-              <execution>
-                <id>attach-javadocs</id>
-                <goals>
-                  <goal>jar</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-source-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>attach-sources</id>
-                <goals>
-                  <goal>jar</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>com.mycila.maven-license-plugin</groupId>
-            <artifactId>maven-license-plugin</artifactId>
-            <configuration>
-              <header>src/etc/header.txt</header>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 
 </project>
