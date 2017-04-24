@@ -1,10 +1,9 @@
 package act.storage;
 
 import act.app.App;
+import act.util.UploadFileStorageService;
 import org.osgl.storage.IStorageService;
-import org.osgl.storage.impl.FileSystemService;
 import org.osgl.storage.impl.S3Service;
-import org.osgl.util.C;
 
 import java.util.Map;
 
@@ -15,7 +14,9 @@ public class S3StoragePlugin extends StoragePlugin {
 
     @Override
     protected IStorageService initStorageService(String id, App app, Map<String, String> conf) {
-        return new S3Service(calibrate(conf, "storage.s3."));
+        S3Service ss = new S3Service(calibrate(conf, "storage.s3."));
+        ss.setKeyNameProvider(UploadFileStorageService.ACT_STORAGE_KEY_NAME_PROVIDER);
+        return ss;
     }
 
 }

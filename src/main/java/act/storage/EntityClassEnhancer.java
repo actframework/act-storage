@@ -24,7 +24,7 @@ public class EntityClassEnhancer extends AppByteCodeEnhancer<EntityClassEnhancer
 
     private boolean hasManagedFields = false;
     private String cn;
-    private StorageServiceManager ssm;
+    private volatile StorageServiceManager ssm;
     private List<DbHooker> dbHookers = C.list();
     private Map<DbHooker, Set<String>> transientAnnotationState = C.newMap();
     private List<String> managedFields = C.newList();
@@ -128,9 +128,13 @@ public class EntityClassEnhancer extends AppByteCodeEnhancer<EntityClassEnhancer
         return hasManagedFields;
     }
 
-    private synchronized StorageServiceManager ssm() {
+    private StorageServiceManager ssm() {
         if (null == ssm) {
-            ssm = App.instance().singleton(StorageServiceManager.class);
+            synchronized (this) {
+                if (null != ssm) {
+                    ssm = App.instance().singleton(StorageServiceManager.class);
+                }
+            }
         }
         return ssm;
     }
