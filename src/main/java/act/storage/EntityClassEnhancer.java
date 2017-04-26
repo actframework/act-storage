@@ -131,7 +131,7 @@ public class EntityClassEnhancer extends AppByteCodeEnhancer<EntityClassEnhancer
     private StorageServiceManager ssm() {
         if (null == ssm) {
             synchronized (this) {
-                if (null != ssm) {
+                if (null == ssm) {
                     ssm = App.instance().singleton(StorageServiceManager.class);
                 }
             }
