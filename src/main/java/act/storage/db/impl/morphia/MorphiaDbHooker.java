@@ -2,6 +2,7 @@ package act.storage.db.impl.morphia;
 
 import act.Act;
 import act.app.App;
+import act.app.DbServiceManager;
 import act.db.DeleteEvent;
 import act.db.morphia.MorphiaService;
 import act.event.ActEventListenerBase;
@@ -16,7 +17,6 @@ import org.mongodb.morphia.annotations.Entity;
 import org.mongodb.morphia.annotations.Transient;
 import org.mongodb.morphia.mapping.Mapper;
 import org.osgl.$;
-import org.osgl.Osgl;
 import org.osgl.cache.CacheService;
 import org.osgl.logging.LogManager;
 import org.osgl.logging.Logger;
@@ -35,7 +35,6 @@ public class MorphiaDbHooker implements DbHooker {
 
     private static Logger logger = LogManager.get(MorphiaDbHooker.class);
 
-    private Mapper mapper;
     private StorageServiceManager ssm;
 
     public MorphiaDbHooker() {
@@ -53,7 +52,12 @@ public class MorphiaDbHooker implements DbHooker {
 
     @Override
     public void hookLifecycleInterceptors() {
-        mapper().addInterceptor(new StorageFieldConverter(ssm()));
+        DbServiceManager dbServiceManager = Act.app().dbServiceManager();
+        List<MorphiaService> morphiaServices = dbServiceManager.dbServicesByClass(MorphiaService.class);
+        StorageFieldConverter storageFieldConverter = new StorageFieldConverter(ssm());
+        for (MorphiaService morphiaService : morphiaServices) {
+            morphiaService.mapper().addInterceptor(storageFieldConverter);
+        }
     }
 
     @Override
@@ -64,13 +68,6 @@ public class MorphiaDbHooker implements DbHooker {
     @Override
     public boolean equals(Object obj) {
         return this == obj || null != obj && MorphiaDbHooker.class.getName().equals(obj.getClass().getName());
-    }
-
-    private synchronized Mapper mapper() {
-        if (null == mapper) {
-            mapper = MorphiaService.mapper();
-        }
-        return mapper;
     }
 
     private synchronized StorageServiceManager ssm() {
@@ -89,7 +86,7 @@ class StorageFieldConverter extends AbstractEntityInterceptor implements EntityI
 
     private CacheService cacheService;
 
-    private Map<$.T2<Class, String>, Class> fieldCache = new HashMap<$.T2<Class, String>, Class>();
+    private Map<$.T2<Class, String>, Class> fieldCache = new HashMap<>();
 
     StorageFieldConverter(StorageServiceManager ssm) {
         this.ssm = $.notNull(ssm);
