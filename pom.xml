@@ -21,7 +21,7 @@
   <groupId>org.actframework</groupId>
   <artifactId>act-storage</artifactId>
   <packaging>jar</packaging>
-  <version>0.11.1-SNAPSHOT</version>
+  <version>0.12.0-BETA-1-SNAPSHOT</version>
 
   <name>ACT Storage</name>
   <description>Enable easy to use osgl-storage in an ActFramework application</description>
@@ -62,7 +62,7 @@
     <osgl-bootstrap.version>1.0.0-BETA-7</osgl-bootstrap.version>
     <osgl-ut.version>1.0.0-BETA-4</osgl-ut.version>
 
-    <act.version>1.4.11</act.version>
+    <act.version>1.6.0-BETA-1</act.version>
     <act-morphia.version>1.2.1</act-morphia.version>
     <act-ebean.version>1.2.3</act-ebean.version>
     <act-ebean2.version>1.1.4</act-ebean2.version>

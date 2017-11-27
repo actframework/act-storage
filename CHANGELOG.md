@@ -1,5 +1,8 @@
 # act-storage CHANGE LOG
 
+0.12.0
+* update to actframework 1.6
+
 0.11.0
 * update to actframework 1.4.11
 * update to osgl-storage 1.4.2

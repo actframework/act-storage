@@ -20,8 +20,10 @@ package act.storage;
  * #L%
  */
 
+import static org.osgl.storage.impl.FileSystemService.CONF_HOME_DIR;
+
 import act.app.App;
-import act.handler.builtin.StaticFileGetter;
+import act.handler.builtin.FileGetter;
 import act.route.RouteSource;
 import act.util.UploadFileStorageService;
 import org.osgl.http.H;
@@ -31,8 +33,6 @@ import org.osgl.util.S;
 
 import java.io.File;
 import java.util.Map;
-
-import static org.osgl.storage.impl.FileSystemService.CONF_HOME_DIR;
 
 /**
  * Support set up {@link org.osgl.storage.impl.FileSystemService}
@@ -51,7 +51,7 @@ public class FileSystemStoragePlugin extends StoragePlugin {
                 url = url + "/";
             }
             if (S.notBlank(url) && !url.startsWith("http") && !url.startsWith("//")) {
-                App.instance().router().addMapping(H.Method.GET, url, new StaticFileGetter(new File(home)), RouteSource.BUILD_IN);
+                App.instance().router().addMapping(H.Method.GET, url, new FileGetter(new File(home)), RouteSource.BUILD_IN);
             }
         }
         return ss;
