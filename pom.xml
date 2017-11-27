@@ -21,7 +21,7 @@
   <groupId>org.actframework</groupId>
   <artifactId>act-storage</artifactId>
   <packaging>jar</packaging>
-  <version>0.12.0-BETA-1</version>
+  <version>0.12.0-BETA-2-SNAPSHOT</version>
 
   <name>ACT Storage</name>
   <description>Enable easy to use osgl-storage in an ActFramework application</description>
