@@ -21,7 +21,7 @@ package act.storage.db;
  */
 
 import act.app.App;
-import act.app.event.AppEventId;
+import act.app.event.SysEventId;
 import act.event.ActEventListenerBase;
 import act.plugin.AppServicePlugin;
 import act.storage.StorageServiceManager;
@@ -53,7 +53,7 @@ public abstract class DbProbe extends AppServicePlugin {
     protected void applyTo(final App app) {
         if (exists()) {
 
-            app.jobManager().on(AppEventId.CLASS_LOADER_INITIALIZED, new Runnable() {
+            app.jobManager().on(SysEventId.CLASS_LOADER_INITIALIZED, new Runnable() {
                 @Override
                 public void run() {
                     Class<DbHooker> hookerClass = $.classForName(dbHookerClass(), app.classLoader());

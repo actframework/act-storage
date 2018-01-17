@@ -23,7 +23,7 @@ package act.storage;
 import act.Destroyable;
 import act.app.App;
 import act.app.AppService;
-import act.app.event.AppEventId;
+import act.app.event.SysEventId;
 import act.conf.AppConfig;
 import act.inject.DependencyInjectionBinder;
 import act.plugin.AppServicePlugin;
@@ -113,7 +113,7 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
         this.app = app;
         initServices(app.config());
         app.registerSingleton(this);
-        app.jobManager().on(AppEventId.DEPENDENCY_INJECTOR_LOADED, new Runnable() {
+        app.jobManager().on(SysEventId.DEPENDENCY_INJECTOR_LOADED, new Runnable() {
             @Override
             public void run() {
                 app().eventBus().emit(new DependencyInjectionBinder<StorageServiceManager>(this, StorageServiceManager.class) {
