@@ -1,5 +1,8 @@
 # act-storage CHANGE LOG
 
+0.13.0
+* update to act-1.7
+
 0.12.0
 * update to actframework 1.6
 

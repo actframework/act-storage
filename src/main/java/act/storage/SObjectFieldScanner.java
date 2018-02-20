@@ -20,7 +20,6 @@ package act.storage;
  * #L%
  */
 
-import act.ActComponent;
 import act.app.App;
 import act.app.AppByteCodeScanner;
 import act.app.AppByteCodeScannerBase;
@@ -39,7 +38,6 @@ import java.util.Set;
 /**
  * Scan classes and find fields with type {@link org.osgl.storage.ISObject}
  */
-@ActComponent
 public class SObjectFieldScanner extends AppCodeScannerPluginBase {
     @Override
     public AppSourceCodeScanner createAppSourceCodeScanner(App app) {
