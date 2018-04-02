@@ -22,29 +22,20 @@ package act.storage.db.impl.ebean;
 
 import act.Act;
 import act.app.App;
-import act.db.DeleteEvent;
 import act.db.ebean.PreEbeanCreation;
-import act.db.morphia.MorphiaService;
 import act.event.ActEventListenerBase;
 import act.storage.StorageServiceManager;
-import act.storage.UpdatePolicy;
 import act.storage.db.DbHooker;
-import act.storage.db.util.Setter;
-import com.avaje.ebean.config.ServerConfig;
-import com.avaje.ebean.event.BeanPersistAdapter;
-import com.avaje.ebean.event.BeanPersistController;
-import com.avaje.ebean.event.BeanPersistRequest;
-import com.avaje.ebean.event.BeanPostLoad;
+import io.ebean.config.ServerConfig;
+import io.ebean.event.BeanPersistAdapter;
+import io.ebean.event.BeanPersistController;
+import io.ebean.event.BeanPersistRequest;
+import io.ebean.event.BeanPostLoad;
 import org.osgl.$;
 import org.osgl.cache.CacheService;
-import org.osgl.storage.ISObject;
-import org.osgl.storage.IStorageService;
-import org.osgl.util.S;
 
 import javax.persistence.Entity;
 import javax.persistence.Transient;
-import java.util.EventObject;
-import java.util.List;
 
 /**
  * hook to {@link act.db.morphia.MorphiaPlugin morphia db layer}
@@ -104,7 +95,7 @@ class StorageFieldConverter extends BeanPersistAdapter implements BeanPersistCon
     private CacheService cacheService;
 
     StorageFieldConverter(StorageServiceManager ssm) {
-        this.ssm = $.notNull(ssm);
+        this.ssm = $.requireNotNull(ssm);
         this.cacheService = Act.app().cache("storage-ebean");
     }
 

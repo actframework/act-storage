@@ -35,14 +35,15 @@
   <parent>
     <groupId>org.actframework</groupId>
     <artifactId>parent</artifactId>
-    <version>1.8.2</version>
+    <version>1.8.5</version>
   </parent>
 
   <properties>
+    <java.version>1.8</java.version>
     <scm.url>git@github.com:actframework/act-storage.git</scm.url>
-    <act-morphia.version>1.4.1</act-morphia.version>
-    <act-ebean-java7.version>1.5.2</act-ebean-java7.version>
-    <act-ebean.version>1.6.0</act-ebean.version>
+    <act-morphia.version>1.4.2</act-morphia.version>
+    <act-ebean-java7.version>1.5.3</act-ebean-java7.version>
+    <act-ebean.version>1.6.2</act-ebean.version>
   </properties>
 
   <scm>
@@ -64,13 +65,6 @@
       <groupId>org.actframework</groupId>
       <artifactId>act-ebean</artifactId>
       <version>${act-ebean.version}</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.actframework</groupId>
-      <artifactId>act-ebean-java7</artifactId>
-      <version>${act-ebean-java7.version}</version>
       <scope>provided</scope>
     </dependency>
 

@@ -1,5 +1,10 @@
 # act-storage CHANGE LOG
 
+0.13.2
+* update act to 1.8.5
+* update act-ebean to 1.6.2
+* update morphia to 1.4.2
+
 0.13.1
 * update act to 1.8.2
 * update act-ebean to 1.6.1
