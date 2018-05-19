@@ -59,7 +59,7 @@ public class SObjectFieldScanner extends AppCodeScannerPluginBase {
         private App app;
 
         _AppByteCodeScanner(App app) {
-            this.app = $.notNull(app);
+            this.app = $.requireNotNull(app);
         }
 
         @Override
@@ -85,7 +85,7 @@ public class SObjectFieldScanner extends AppCodeScannerPluginBase {
         private String contextPath;
         private UpdatePolicy updatePolicy = UpdatePolicy.DELETE_OLD_DATA;
         _ByteCodeVisitor(App app) {
-            this.app = $.notNull(app);
+            this.app = $.requireNotNull(app);
         }
 
         @Override

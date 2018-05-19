@@ -1,5 +1,11 @@
 # act-storage CHANGE LOG
 
+0.13.3 - 19/May/2018
+* update act to 1.8.8-RC5
+* update act-ebean to 1.6.5
+* update act-ebean-java7 to 1.6.2
+* update morphia to 1.5.1
+
 0.13.2
 * update act to 1.8.5
 * update act-ebean to 1.6.2

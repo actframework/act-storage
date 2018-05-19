@@ -138,7 +138,7 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
 
     private static String ssKey(String className, String fieldName) {
         StringBuilder sb = S.builder();
-        sb.append($.notNull(className));
+        sb.append($.requireNotNull(className));
         if (S.notBlank(fieldName)) {
             sb.append(":");
             sb.append(fieldName);
@@ -396,7 +396,7 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
                 if (null != instances) {
                     // use the first instance as the default one
                     IStorageService svc = serviceById.get(instances.split(S.COMMON_SEP)[0]);
-                    serviceById.put(DEFAULT, $.notNull(svc));
+                    serviceById.put(DEFAULT, $.requireNotNull(svc));
                 } else {
                     throw E.invalidConfiguration("Default db service for the application needs to be specified");
                 }
