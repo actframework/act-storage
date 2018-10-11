@@ -84,6 +84,7 @@ public class SObjectFieldScanner extends AppCodeScannerPluginBase {
         private String serviceId;
         private String contextPath;
         private UpdatePolicy updatePolicy = UpdatePolicy.DELETE_OLD_DATA;
+
         _ByteCodeVisitor(App app) {
             this.app = $.requireNotNull(app);
         }

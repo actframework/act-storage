@@ -28,8 +28,6 @@ import act.storage.StorageServiceManager;
 import act.storage.StorageServiceManagerInitialized;
 import org.osgl.$;
 
-import java.util.EventObject;
-
 /**
  * The implementation of this interface probe
  * if a specific {@link act.db.DbPlugin database layer}
@@ -52,21 +50,30 @@ public abstract class DbProbe extends AppServicePlugin {
     @Override
     protected void applyTo(final App app) {
         if (exists()) {
-
             app.jobManager().on(SysEventId.CLASS_LOADER_INITIALIZED, new Runnable() {
                 @Override
                 public void run() {
                     Class<DbHooker> hookerClass = $.classForName(dbHookerClass(), app.classLoader());
                     final DbHooker hooker = app.getInstance(hookerClass);
-                    StorageServiceManager ssm = StorageServiceManager.instance();
+                    final StorageServiceManager ssm = StorageServiceManager.instance();
                     if (null != ssm) {
-                        ssm.addDbHooker(hooker);
+                        app.jobManager().on(SysEventId.DB_SVC_LOADED, new Runnable() {
+                            @Override
+                            public void run() {
+                                ssm.addDbHooker(hooker);
+                            }
+                        });
                     } else {
                         app.eventBus().bind(StorageServiceManagerInitialized.class, new ActEventListenerBase<StorageServiceManagerInitialized>(getClass().getName() + ":hook-to-ssm") {
                             @Override
                             public void on(StorageServiceManagerInitialized event) throws Exception {
-                                StorageServiceManager ssm = event.source();
-                                ssm.addDbHooker(hooker);
+                                final StorageServiceManager ssm = event.source();
+                                app.jobManager().on(SysEventId.DB_SVC_LOADED, new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        ssm.addDbHooker(hooker);
+                                    }
+                                });
                             }
                         });
                     }
