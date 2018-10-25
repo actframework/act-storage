@@ -68,7 +68,7 @@ public abstract class DbProbe extends AppServicePlugin {
                         app.eventBus().bind(StorageServiceManagerInitialized.class, new ActEventListenerBase<StorageServiceManagerInitialized>(getClass().getName() + ":hook-to-ssm") {
                             @Override
                             public void on(StorageServiceManagerInitialized event) {
-                                ssm.addDbHooker(hooker);
+                                event.source().addDbHooker(hooker);
                                 app.jobManager().on(SysEventId.DB_SVC_LOADED, new Runnable() {
                                     @Override
                                     public void run() {
