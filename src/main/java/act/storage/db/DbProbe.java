@@ -56,22 +56,22 @@ public abstract class DbProbe extends AppServicePlugin {
                     Class<DbHooker> hookerClass = $.classForName(dbHookerClass(), app.classLoader());
                     final DbHooker hooker = app.getInstance(hookerClass);
                     final StorageServiceManager ssm = StorageServiceManager.instance();
+                    ssm.addDbHooker(hooker);
                     if (null != ssm) {
                         app.jobManager().on(SysEventId.DB_SVC_LOADED, new Runnable() {
                             @Override
                             public void run() {
-                                ssm.addDbHooker(hooker);
+                                hooker.hookLifecycleInterceptors();
                             }
                         });
                     } else {
                         app.eventBus().bind(StorageServiceManagerInitialized.class, new ActEventListenerBase<StorageServiceManagerInitialized>(getClass().getName() + ":hook-to-ssm") {
                             @Override
-                            public void on(StorageServiceManagerInitialized event) throws Exception {
-                                final StorageServiceManager ssm = event.source();
+                            public void on(StorageServiceManagerInitialized event) {
                                 app.jobManager().on(SysEventId.DB_SVC_LOADED, new Runnable() {
                                     @Override
                                     public void run() {
-                                        ssm.addDbHooker(hooker);
+                                        hooker.hookLifecycleInterceptors();
                                     }
                                 });
                             }

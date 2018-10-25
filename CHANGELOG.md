@@ -1,5 +1,8 @@
 # act-storage CHANGE LOG
 
+0.13.5
+* Entity class enhancement time sequence issue #5
+
 0.13.4 - 19/Jun/2018
 * update act to 1.8.8-RC10
 * update act-ebean to 1.7.2

@@ -315,7 +315,6 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
     public void addDbHooker(DbHooker dbHooker) {
         if (!this.dbHookers.contains(dbHooker)) {
             this.dbHookers.add(dbHooker);
-            dbHooker.hookLifecycleInterceptors();
             logger.debug("DbHooker[%s] hooked", dbHooker.getClass());
         }
     }
