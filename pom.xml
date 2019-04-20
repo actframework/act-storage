@@ -35,13 +35,13 @@
   <parent>
     <groupId>org.actframework</groupId>
     <artifactId>parent</artifactId>
-    <version>1.8.9</version>
+    <version>1.8.20</version>
   </parent>
 
   <properties>
     <scm.url>git@github.com:actframework/act-storage.git</scm.url>
-    <act-morphia.version>1.6.2</act-morphia.version>
-    <act-ebean.version>1.7.3</act-ebean.version>
+    <act-morphia.version>1.6.7</act-morphia.version>
+    <act-ebean.version>1.7.7</act-ebean.version>
   </properties>
 
   <scm>

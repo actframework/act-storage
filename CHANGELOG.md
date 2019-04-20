@@ -1,5 +1,10 @@
 # act-storage CHANGE LOG
 
+0.13.6 - 20/Apr/2019
+* update to 1.8.20
+* update act-ebean to 1.7.7
+* update morphia to 1.6.7
+
 0.13.5 - 30/Oct/2018
 * update act to 1.8.8
 * update act-ebean to 1.7.3
