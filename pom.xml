@@ -20,7 +20,7 @@
 
   <artifactId>act-storage</artifactId>
   <packaging>jar</packaging>
-  <version>0.13.6</version>
+  <version>0.13.7-SNAPSHOT</version>
 
   <name>ACT Storage</name>
   <description>Enable easy to use osgl-storage in an ActFramework application</description>
