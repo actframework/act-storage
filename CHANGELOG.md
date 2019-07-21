@@ -1,5 +1,8 @@
 # act-storage CHANGE LOG
 
+0.14.0 - 21/Jul/2019
+* update to act-1.8.26
+
 0.13.6 - 20/Apr/2019
 * update to 1.8.20
 * update act-ebean to 1.7.7
