@@ -1,5 +1,8 @@
 # act-storage CHANGE LOG
 
+0.15.0 - 03/Nov/2019
+* update to act-1.8.29
+
 0.14.0 - 21/Jul/2019
 * update to act-1.8.26
 
