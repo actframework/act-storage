@@ -20,6 +20,7 @@ package act.storage;
  * #L%
  */
 
+import act.Act;
 import act.Destroyable;
 import act.app.App;
 import act.app.AppService;
@@ -31,6 +32,7 @@ import act.storage.db.DbHooker;
 import act.storage.db.util.Setter;
 import org.osgl.$;
 import org.osgl.exception.ConfigurationException;
+import org.osgl.inject.NamedProvider;
 import org.osgl.logging.LogManager;
 import org.osgl.logging.Logger;
 import org.osgl.storage.ISObject;
@@ -44,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Provider;
 import javax.inject.Singleton;
 
 /**
@@ -104,11 +107,29 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
 
     private boolean isDestroyed;
 
+    private final Provider<IStorageService> SS_PROVIDER = new Provider<IStorageService>() {
+        @Override
+        public IStorageService get() {
+            return storageService(DEFAULT);
+        }
+    };
+
+    private final NamedProvider<IStorageService> SS_NAMED_PROVIDER = new NamedProvider<IStorageService>() {
+        @Override
+        public IStorageService get(String name) {
+            IStorageService ss = storageService(name);
+            if (null == ss && ("ss".equalsIgnoreCase(name) || "storageService".equalsIgnoreCase(name) || "svc".equalsIgnoreCase(name) || "service".equalsIgnoreCase(name))) {
+                return storageService(DEFAULT);
+            }
+            return ss;
+        }
+    };
+
     public StorageServiceManager() {
     }
 
     @Override
-    protected void applyTo(App app) {
+    protected void applyTo(final App app) {
         this.reset();
         this.app = app;
         initServices(app.config());
@@ -122,6 +143,13 @@ public class StorageServiceManager extends AppServicePlugin implements AppServic
                         return StorageServiceManager.this;
                     }
                 });
+            }
+        });
+        app.jobManager().on(SysEventId.PRE_START, new Runnable() {
+            @Override
+            public void run() {
+                app.injector().registerProvider(IStorageService.class, SS_PROVIDER);
+                app.injector().registerNamedProvider(IStorageService.class, SS_NAMED_PROVIDER);
             }
         });
         app.eventBus().emit(new StorageServiceManagerInitialized(this));

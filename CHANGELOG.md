@@ -1,5 +1,10 @@
 # act-storage CHANGE LOG
 
+0.16.0
+* Allow inject StorageService by name optionally #6
+* update to act-1.8.32
+* update osgl-storage to 1.10.1
+
 0.15.0 - 03/Nov/2019
 * update to act-1.8.29
 
